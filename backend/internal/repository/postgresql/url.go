@@ -3,7 +3,6 @@ package postgresql
 import (
 	"context"
 	"errors"
-	"log/slog"
 
 	"CoolUrlShortener/internal/domain"
 	"CoolUrlShortener/internal/errs"
@@ -13,7 +12,6 @@ import (
 )
 
 type urlRepoPostgres struct {
-	logger *slog.Logger
 	dbPool *pgxpool.Pool
 }
 

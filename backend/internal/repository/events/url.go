@@ -14,9 +14,8 @@ import (
 )
 
 type eventsWriterClickhouse struct {
-	logger    *slog.Logger
-	conn      driver.Conn
-	tableName string
+	logger *slog.Logger
+	conn   driver.Conn
 }
 
 func NewEventsWriterClickhouse(

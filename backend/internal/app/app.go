@@ -72,6 +72,9 @@ func Run() {
 		panic(err)
 	}
 	dbPool, err := pgxpool.New(context.Background(), connString)
+	if err != nil {
+		panic(err)
+	}
 	defer dbPool.Close()
 
 	validate := validator.New(validator.WithRequiredStructEnabled())
@@ -106,12 +109,11 @@ func Run() {
 		Addr:    addr,
 		Handler: mux,
 	}
-	msg := fmt.Sprintf("Start consume url events")
-	logger.Info(msg)
+
+	logger.Info("Start consume url events")
 	eventsServiceConsumer.ConsumeEvents()
 
-	msg = fmt.Sprintf("Run server on %s", addr)
-	logger.Info(msg)
+	logger.Info(fmt.Sprintf("Run server on %s", addr))
 	err = server.ListenAndServe()
 	if err != nil {
 		logger.Info(err.Error())
