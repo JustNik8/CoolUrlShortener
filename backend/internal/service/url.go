@@ -78,7 +78,8 @@ func (s *urlService) shortenURL(longURL string) (int64, string) {
 
 	var sb strings.Builder
 	for i := range nums {
-		sb.WriteByte(alphabet[i])
+		idx := nums[i]
+		sb.WriteByte(alphabet[idx])
 	}
 
 	return id, sb.String()

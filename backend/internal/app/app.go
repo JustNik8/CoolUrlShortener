@@ -10,6 +10,7 @@ import (
 	"CoolUrlShortener/internal/repository/postgresql"
 	"CoolUrlShortener/internal/service"
 	"CoolUrlShortener/internal/transport/rest"
+	"github.com/go-playground/validator/v10"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -50,15 +51,18 @@ func Run() {
 	dbPool, err := pgxpool.New(context.Background(), connString)
 	defer dbPool.Close()
 
+	validate := validator.New(validator.WithRequiredStructEnabled())
+
 	urlRepo := postgresql.NewUrlRepoPostgres(dbPool)
 	urlService := service.NewURLService(urlRepo)
-	urlHandler := rest.NewURLHandler(logger, urlService)
+	urlHandler := rest.NewURLHandler(logger, urlService, validate)
 
 	healthCheckHandler := rest.NewHealthCheckHandler(logger)
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/url/{short_url}", urlHandler.FollowLink)
-	mux.HandleFunc("/healthcheck", healthCheckHandler.HealthCheck)
+	mux.HandleFunc("GET /api/healthcheck", healthCheckHandler.HealthCheck)
+	mux.HandleFunc("POST /api/save_url", urlHandler.SaveURL)
+	mux.HandleFunc("GET /{short_url}", urlHandler.FollowUrl)
 
 	addr := fmt.Sprintf(":%s", serverPort)
 	server := http.Server{
