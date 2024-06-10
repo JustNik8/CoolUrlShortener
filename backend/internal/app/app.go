@@ -7,6 +7,9 @@ import (
 	"net/http"
 	"os"
 
+	"CoolUrlShortener/internal/domain"
+	"CoolUrlShortener/internal/repository"
+	"CoolUrlShortener/internal/repository/events"
 	"CoolUrlShortener/internal/repository/postgresql"
 	"CoolUrlShortener/internal/repository/rediscache"
 	"CoolUrlShortener/internal/service"
@@ -31,9 +34,23 @@ const (
 	redisHost     = "REDIS_HOST"
 	redisPort     = "REDIS_PORT"
 	redisPassword = "REDIS_PASSWORD"
+
+	clickhouseUsername = "CLICKHOUSE_USERNAME"
+	clickhousePassword = "CLICKHOUSE_PASSWORD"
+	clickhouseHost     = "CLICKHOUSE_HOST"
+	clickhousePort     = "CLICKHOUSE_PORT"
+	clickhouseDatabase = "CLICKHOUSE_DATABASE"
 )
 
 func Run() {
+	eventsCh := make(chan domain.URLEvent)
+
+	defer func() {
+		if r := recover(); r != nil {
+			close(eventsCh)
+		}
+	}()
+
 	serverPort := os.Getenv(serverPortKey)
 	if serverPort == "" {
 		msg := fmt.Sprintf("You did not provide env: %s", serverPortKey)
@@ -59,6 +76,14 @@ func Run() {
 
 	validate := validator.New(validator.WithRequiredStructEnabled())
 
+	eventsWriter, err := setupEventsWriter(logger)
+	if err != nil {
+		panic(err)
+	}
+
+	eventsServiceConsumer := service.NewEventsServiceConsumer(logger, eventsCh, eventsWriter)
+	eventsServiceProducer := service.NewEventsServiceProducer(eventsCh)
+
 	redisClient, err := setupRedisClient()
 	if err != nil {
 		panic(err.Error())
@@ -66,7 +91,7 @@ func Run() {
 
 	urlCache := rediscache.NewURLCacheRedis(redisClient)
 	urlRepo := postgresql.NewUrlRepoPostgres(dbPool)
-	urlService := service.NewURLService(logger, urlRepo, urlCache)
+	urlService := service.NewURLService(logger, urlRepo, urlCache, eventsServiceProducer)
 	urlHandler := rest.NewURLHandler(logger, urlService, validate)
 
 	healthCheckHandler := rest.NewHealthCheckHandler(logger)
@@ -81,8 +106,11 @@ func Run() {
 		Addr:    addr,
 		Handler: mux,
 	}
+	msg := fmt.Sprintf("Start consume url events")
+	logger.Info(msg)
+	eventsServiceConsumer.ConsumeEvents()
 
-	msg := fmt.Sprintf("Run server on %s", addr)
+	msg = fmt.Sprintf("Run server on %s", addr)
 	logger.Info(msg)
 	err = server.ListenAndServe()
 	if err != nil {
@@ -141,7 +169,7 @@ func setupLogger(env string) (*slog.Logger, error) {
 func setupRedisClient() (*redis.Client, error) {
 	host := os.Getenv(redisHost)
 	if host == "" {
-		return nil, fmt.Errorf("you did not provice env: %s", redisHost)
+		return nil, fmt.Errorf("you did not provide env: %s", redisHost)
 	}
 
 	port := os.Getenv(redisPort)
@@ -162,4 +190,38 @@ func setupRedisClient() (*redis.Client, error) {
 	})
 
 	return redisClient, nil
+}
+
+func setupEventsWriter(logger *slog.Logger) (repository.EventsWriter, error) {
+	username := os.Getenv(clickhouseUsername)
+	if username == "" {
+		return nil, fmt.Errorf("you did not provide env: %s", clickhouseUsername)
+	}
+	password := os.Getenv(clickhousePassword)
+	if password == "" {
+		return nil, fmt.Errorf("you did not provice env: %s", clickhousePassword)
+	}
+	host := os.Getenv(clickhouseHost)
+	if host == "" {
+		return nil, fmt.Errorf("you did not provide env: %s", clickhouseHost)
+	}
+	port := os.Getenv(clickhousePort)
+	if port == "" {
+		return nil, fmt.Errorf("you did not provide env: %s", clickhousePort)
+	}
+
+	database := os.Getenv(clickhouseDatabase)
+	if database == "" {
+		return nil, fmt.Errorf("you did not provice env: %s", clickhouseDatabase)
+	}
+	eventsWriter, err := events.NewEventsWriterClickhouse(
+		logger,
+		database,
+		username,
+		password,
+		host,
+		port,
+	)
+
+	return eventsWriter, err
 }

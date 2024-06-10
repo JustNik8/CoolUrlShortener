@@ -27,27 +27,37 @@ type URLService interface {
 }
 
 type urlService struct {
-	logger   *slog.Logger
-	urlRepo  repository.UrlRepo
-	urlCache repository.URLCache
+	logger                *slog.Logger
+	urlRepo               repository.UrlRepo
+	urlCache              repository.URLCache
+	eventsServiceProducer EventsServiceProducer
 }
 
 func NewURLService(
 	logger *slog.Logger,
 	repo repository.UrlRepo,
 	urlCache repository.URLCache,
+	eventsServiceProducer EventsServiceProducer,
 ) URLService {
 	return &urlService{
-		logger:   logger,
-		urlRepo:  repo,
-		urlCache: urlCache,
+		logger:                logger,
+		urlRepo:               repo,
+		urlCache:              urlCache,
+		eventsServiceProducer: eventsServiceProducer,
 	}
 }
 
 func (s *urlService) GetLongURL(ctx context.Context, shortURL string) (string, error) {
 	longURLCache, err := s.urlCache.GetLongURL(ctx, shortURL)
 	if err == nil {
-		s.logger.Info("GOT FROM REDIS")
+		s.eventsServiceProducer.ProduceEvent(
+			domain.URLEvent{
+				LongURL:   longURLCache,
+				ShortURL:  shortURL,
+				EventTime: time.Now(),
+				EventType: eventTypeFollow,
+			},
+		)
 		return longURLCache, nil
 	}
 
@@ -60,12 +70,28 @@ func (s *urlService) GetLongURL(ctx context.Context, shortURL string) (string, e
 		s.logger.Error(err.Error())
 	}
 
+	s.eventsServiceProducer.ProduceEvent(
+		domain.URLEvent{
+			LongURL:   longURL,
+			ShortURL:  shortURL,
+			EventTime: time.Now(),
+			EventType: eventTypeFollow,
+		},
+	)
 	return longURL, nil
 }
 
 func (s *urlService) SaveURL(ctx context.Context, longURL string) (string, error) {
 	gotShortURL, err := s.urlRepo.GetShortURLByLongURL(ctx, longURL)
 	if err == nil {
+		s.eventsServiceProducer.ProduceEvent(
+			domain.URLEvent{
+				LongURL:   longURL,
+				ShortURL:  gotShortURL,
+				EventTime: time.Now(),
+				EventType: eventTypeCreate,
+			},
+		)
 		return gotShortURL, nil
 	}
 	if err != nil && !errors.Is(err, errs.ErrNoURL) {
@@ -89,6 +115,14 @@ func (s *urlService) SaveURL(ctx context.Context, longURL string) (string, error
 		s.logger.Error(err.Error())
 	}
 
+	s.eventsServiceProducer.ProduceEvent(
+		domain.URLEvent{
+			LongURL:   longURL,
+			ShortURL:  shortUrl,
+			EventTime: time.Now(),
+			EventType: eventTypeCreate,
+		},
+	)
 	return shortUrl, nil
 }
 

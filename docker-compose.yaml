@@ -24,14 +24,22 @@ services:
     environment:
       ENV: "local"
       SERVER_PORT: "8000"
+
       DATABASE_USERNAME: "user"
       DATABASE_PASSWORD: "user"
       DATABASE_HOST: "postgres"
       DATABASE_PORT: "5432"
       DATABASE_NAME: "url_shortener_db"
+
       REDIS_HOST: "redis"
       REDIS_PORT: "6379"
       REDIS_PASSWORD: "redis"
+
+      CLICKHOUSE_USERNAME: "user"
+      CLICKHOUSE_PASSWORD: "user"
+      CLICKHOUSE_HOST: "clickhouse"
+      CLICKHOUSE_PORT: "9000"
+      CLICKHOUSE_DATABASE: "default"
     networks:
       - service_network
     healthcheck:
@@ -42,6 +50,10 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
 
   redis:
     image: bitnami/redis:latest
@@ -51,12 +63,39 @@ services:
       - redis_vol:/bitnami/redis/data
     environment:
       - REDIS_PASSWORD=redis
+    healthcheck:
+      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
+      interval: 10s
+      timeout: 10s
+      retries: 10
     networks:
       - service_network
+
+  clickhouse:
+    image: clickhouse/clickhouse-server
+    ports:
+      - "18123:8123"
+    environment:
+      CLICKHOUSE_USER: user
+      CLICKHOUSE_PASSWORD: user
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "-q", "localhost:8123/ping" ]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+    networks:
+      - service_network
+    volumes:
+      - clickhouse_vol:/var/lib/clickhouse/
 
 volumes:
   pg_vol:
   redis_vol:
+  clickhouse_vol:
 
 networks:
   service_network:
