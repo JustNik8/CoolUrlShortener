@@ -29,6 +29,9 @@ services:
       DATABASE_HOST: "postgres"
       DATABASE_PORT: "5432"
       DATABASE_NAME: "url_shortener_db"
+      REDIS_HOST: "redis"
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: "redis"
     networks:
       - service_network
     healthcheck:
@@ -40,8 +43,20 @@ services:
       postgres:
         condition: service_healthy
 
+  redis:
+    image: bitnami/redis:latest
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_vol:/bitnami/redis/data
+    environment:
+      - REDIS_PASSWORD=redis
+    networks:
+      - service_network
+
 volumes:
   pg_vol:
+  redis_vol:
 
 networks:
   service_network:
