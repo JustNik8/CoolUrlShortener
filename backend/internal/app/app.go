@@ -152,6 +152,7 @@ func setupConnString() (string, error) {
 
 func setupLogger(env string) (*slog.Logger, error) {
 	var logger *slog.Logger
+
 	switch env {
 	case envLocal:
 		logger = slog.New(
