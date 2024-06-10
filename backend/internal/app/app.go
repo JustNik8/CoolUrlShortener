@@ -8,10 +8,12 @@ import (
 	"os"
 
 	"CoolUrlShortener/internal/repository/postgresql"
+	"CoolUrlShortener/internal/repository/rediscache"
 	"CoolUrlShortener/internal/service"
 	"CoolUrlShortener/internal/transport/rest"
 	"github.com/go-playground/validator/v10"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
 )
 
 const (
@@ -25,6 +27,10 @@ const (
 	databaseHost     = "DATABASE_HOST"
 	databasePort     = "DATABASE_PORT"
 	databaseName     = "DATABASE_NAME"
+
+	redisHost     = "REDIS_HOST"
+	redisPort     = "REDIS_PORT"
+	redisPassword = "REDIS_PASSWORD"
 )
 
 func Run() {
@@ -53,8 +59,14 @@ func Run() {
 
 	validate := validator.New(validator.WithRequiredStructEnabled())
 
+	redisClient, err := setupRedisClient()
+	if err != nil {
+		panic(err.Error())
+	}
+
+	urlCache := rediscache.NewURLCacheRedis(redisClient)
 	urlRepo := postgresql.NewUrlRepoPostgres(dbPool)
-	urlService := service.NewURLService(urlRepo)
+	urlService := service.NewURLService(logger, urlRepo, urlCache)
 	urlHandler := rest.NewURLHandler(logger, urlService, validate)
 
 	healthCheckHandler := rest.NewHealthCheckHandler(logger)
@@ -124,4 +136,30 @@ func setupLogger(env string) (*slog.Logger, error) {
 	}
 
 	return logger, nil
+}
+
+func setupRedisClient() (*redis.Client, error) {
+	host := os.Getenv(redisHost)
+	if host == "" {
+		return nil, fmt.Errorf("you did not provice env: %s", redisHost)
+	}
+
+	port := os.Getenv(redisPort)
+	if port == "" {
+		return nil, fmt.Errorf("you did not provide env: %s", redisPort)
+	}
+
+	password := os.Getenv(redisPassword)
+	if password == "" {
+		return nil, fmt.Errorf("you did not provide env: %s", redisPassword)
+	}
+
+	addr := fmt.Sprintf("%s:%s", host, port)
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     addr,
+		Password: password,
+		DB:       0,
+	})
+
+	return redisClient, nil
 }

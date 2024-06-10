@@ -53,7 +53,6 @@ func (h *URLHandler) FollowUrl(w http.ResponseWriter, r *http.Request) {
 
 	if shortUrl == "" {
 		msg := "short url is empty"
-		h.logger.Info(msg)
 		response.BadRequest(w, msg)
 		return
 	}

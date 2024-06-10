@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -26,21 +27,44 @@ type URLService interface {
 }
 
 type urlService struct {
-	repo repository.UrlRepo
+	logger   *slog.Logger
+	urlRepo  repository.UrlRepo
+	urlCache repository.URLCache
 }
 
-func NewURLService(repo repository.UrlRepo) URLService {
+func NewURLService(
+	logger *slog.Logger,
+	repo repository.UrlRepo,
+	urlCache repository.URLCache,
+) URLService {
 	return &urlService{
-		repo: repo,
+		logger:   logger,
+		urlRepo:  repo,
+		urlCache: urlCache,
 	}
 }
 
-func (s *urlService) GetLongURL(ctx context.Context, shortUrl string) (string, error) {
-	return s.repo.GetLongURL(ctx, shortUrl)
+func (s *urlService) GetLongURL(ctx context.Context, shortURL string) (string, error) {
+	longURLCache, err := s.urlCache.GetLongURL(ctx, shortURL)
+	if err == nil {
+		s.logger.Info("GOT FROM REDIS")
+		return longURLCache, nil
+	}
+
+	longURL, err := s.urlRepo.GetLongURL(ctx, shortURL)
+	if err != nil {
+		return "", err
+	}
+	err = s.urlCache.SetLongURL(ctx, shortURL, longURL)
+	if err != nil {
+		s.logger.Error(err.Error())
+	}
+
+	return longURL, nil
 }
 
 func (s *urlService) SaveURL(ctx context.Context, longURL string) (string, error) {
-	gotShortURL, err := s.repo.GetShortURLByLongURL(ctx, longURL)
+	gotShortURL, err := s.urlRepo.GetShortURLByLongURL(ctx, longURL)
 	if err == nil {
 		return gotShortURL, nil
 	}
@@ -56,8 +80,16 @@ func (s *urlService) SaveURL(ctx context.Context, longURL string) (string, error
 		CreatedAt: time.Now(),
 	}
 
-	err = s.repo.SaveURL(ctx, urlData)
-	return shortUrl, err
+	err = s.urlRepo.SaveURL(ctx, urlData)
+	if err != nil {
+		return "", err
+	}
+	err = s.urlCache.SetLongURL(ctx, shortUrl, longURL)
+	if err != nil {
+		s.logger.Error(err.Error())
+	}
+
+	return shortUrl, nil
 }
 
 func (s *urlService) shortenURL(longURL string) (int64, string) {
