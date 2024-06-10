@@ -1,5 +1,7 @@
 package main
 
-func main() {
+import "CoolUrlShortener/internal/app"
 
+func main() {
+	app.Run()
 }

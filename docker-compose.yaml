@@ -17,6 +17,29 @@ services:
       timeout: 5s
       retries: 10
 
+  url_shortener_service:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      ENV: "local"
+      SERVER_PORT: "8000"
+      DATABASE_USERNAME: "user"
+      DATABASE_PASSWORD: "user"
+      DATABASE_HOST: "postgres"
+      DATABASE_PORT: "5432"
+      DATABASE_NAME: "url_shortener_db"
+    networks:
+      - service_network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/healthcheck" ]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   pg_vol:
 

@@ -4,8 +4,12 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 
+	"CoolUrlShortener/internal/repository/postgresql"
+	"CoolUrlShortener/internal/service"
+	"CoolUrlShortener/internal/transport/rest"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -14,6 +18,7 @@ const (
 	envProd  = "prod"
 
 	envKey           = "ENV"
+	serverPortKey    = "SERVER_PORT"
 	databaseUsername = "DATABASE_USERNAME"
 	databasePassword = "DATABASE_PASSWORD"
 	databaseHost     = "DATABASE_HOST"
@@ -22,15 +27,21 @@ const (
 )
 
 func Run() {
-	env := os.Getenv(envKey)
-	if env == "" {
-		msg := fmt.Sprintf("You did not provided env: %s", envKey)
+	serverPort := os.Getenv(serverPortKey)
+	if serverPort == "" {
+		msg := fmt.Sprintf("You did not provide env: %s", serverPortKey)
 		panic(msg)
 	}
-	//logger, err := setupLogger(env)
-	//if err != nil {
-	//	panic(err)
-	//}
+	env := os.Getenv(envKey)
+	if env == "" {
+		msg := fmt.Sprintf("You did not provide env: %s", envKey)
+		panic(msg)
+	}
+
+	logger, err := setupLogger(env)
+	if err != nil {
+		panic(err)
+	}
 
 	connString, err := setupConnString()
 	if err != nil {
@@ -39,6 +50,28 @@ func Run() {
 	dbPool, err := pgxpool.New(context.Background(), connString)
 	defer dbPool.Close()
 
+	urlRepo := postgresql.NewUrlRepoPostgres(dbPool)
+	urlService := service.NewURLService(urlRepo)
+	urlHandler := rest.NewURLHandler(logger, urlService)
+
+	healthCheckHandler := rest.NewHealthCheckHandler(logger)
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/url/{short_url}", urlHandler.FollowLink)
+	mux.HandleFunc("/healthcheck", healthCheckHandler.HealthCheck)
+
+	addr := fmt.Sprintf(":%s", serverPort)
+	server := http.Server{
+		Addr:    addr,
+		Handler: mux,
+	}
+
+	msg := fmt.Sprintf("Run server on %s", addr)
+	logger.Info(msg)
+	err = server.ListenAndServe()
+	if err != nil {
+		logger.Info(err.Error())
+	}
 }
 
 func setupConnString() (string, error) {

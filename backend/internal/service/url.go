@@ -61,7 +61,7 @@ func (s *urlService) SaveURL(ctx context.Context, longURL string) (string, error
 }
 
 func (s *urlService) shortenURL(longURL string) (int64, string) {
-	sum := int(0)
+	sum := 0
 
 	for _, r := range longURL {
 		sum += int(r)
@@ -73,7 +73,7 @@ func (s *urlService) shortenURL(longURL string) (int64, string) {
 		rem := sum % alphabetLen
 		nums = append(nums, rem)
 
-		rem /= alphabetLen
+		sum /= alphabetLen
 	}
 
 	var sb strings.Builder
