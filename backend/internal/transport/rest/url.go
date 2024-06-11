@@ -38,6 +38,8 @@ func NewURLHandler(
 }
 
 func (h *URLHandler) FollowUrl(w http.ResponseWriter, r *http.Request) {
+	h.logger.Info(r.URL.Host)
+	h.logger.Info(r.URL.Path)
 	shortUrl := r.PathValue(shortUrlPathValue)
 	msg := fmt.Sprintf("got url: %s", shortUrl)
 	h.logger.Info(msg)

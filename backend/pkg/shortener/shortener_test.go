@@ -20,3 +20,12 @@ func TestBase62UrlShortener(t *testing.T) {
 		}
 	})
 }
+
+func BenchmarkNewBase62UrlShortener(b *testing.B) {
+	base62UrlShortener := NewBase62UrlShortener()
+	id := uuid.New().ID()
+
+	for n := 0; n < b.N; n++ {
+		_ = base62UrlShortener.ShortenURL(id)
+	}
+}
