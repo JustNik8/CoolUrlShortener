@@ -14,6 +14,7 @@ import (
 	"CoolUrlShortener/internal/repository/rediscache"
 	"CoolUrlShortener/internal/service"
 	"CoolUrlShortener/internal/transport/rest"
+	"CoolUrlShortener/pkg/shortener"
 	"github.com/go-playground/validator/v10"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
@@ -92,9 +93,11 @@ func Run() {
 		panic(err.Error())
 	}
 
+	base62URLShortener := shortener.NewBase62UrlShortener()
+
 	urlCache := rediscache.NewURLCacheRedis(redisClient)
 	urlRepo := postgresql.NewUrlRepoPostgres(dbPool)
-	urlService := service.NewURLService(logger, urlRepo, urlCache, eventsServiceProducer)
+	urlService := service.NewURLService(logger, urlRepo, urlCache, eventsServiceProducer, base62URLShortener)
 	urlHandler := rest.NewURLHandler(logger, urlService, validate)
 
 	healthCheckHandler := rest.NewHealthCheckHandler(logger)

@@ -4,36 +4,18 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"strings"
 	"time"
 
 	"CoolUrlShortener/internal/domain"
 	"CoolUrlShortener/internal/errs"
 	"CoolUrlShortener/internal/repository"
+	"CoolUrlShortener/pkg/shortener"
 	"github.com/google/uuid"
-)
-
-const (
-	alphabet          = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-	protocolSeparator = "://"
-	defaultProtocol   = "https"
-)
-
-var (
-	alphabetLen = len(alphabet)
-)
-
-var (
-	availableProtocols = map[string]struct{}{
-		"http":  {},
-		"https": {},
-	}
 )
 
 type URLService interface {
 	GetLongURL(ctx context.Context, shortUrl string) (string, error)
 	SaveURL(ctx context.Context, longURL string) (string, error)
-	shortenURL(id uint32) string
 }
 
 type urlService struct {
@@ -41,6 +23,7 @@ type urlService struct {
 	urlRepo               repository.UrlRepo
 	urlCache              repository.URLCache
 	eventsServiceProducer EventsServiceProducer
+	urlShortener          shortener.URLShortener
 }
 
 func NewURLService(
@@ -48,12 +31,14 @@ func NewURLService(
 	repo repository.UrlRepo,
 	urlCache repository.URLCache,
 	eventsServiceProducer EventsServiceProducer,
+	urlShortener shortener.URLShortener,
 ) URLService {
 	return &urlService{
 		logger:                logger,
 		urlRepo:               repo,
 		urlCache:              urlCache,
 		eventsServiceProducer: eventsServiceProducer,
+		urlShortener:          urlShortener,
 	}
 }
 
@@ -109,7 +94,7 @@ func (s *urlService) SaveURL(ctx context.Context, longURL string) (string, error
 	}
 
 	id := uuid.New().ID()
-	shortUrl := s.shortenURL(id)
+	shortUrl := s.urlShortener.ShortenURL(id)
 	urlData := domain.URLData{
 		ID:        int64(id),
 		ShortUrl:  shortUrl,
@@ -135,22 +120,4 @@ func (s *urlService) SaveURL(ctx context.Context, longURL string) (string, error
 		},
 	)
 	return shortUrl, nil
-}
-
-func (s *urlService) shortenURL(id uint32) string {
-	nums := make([]int, 0)
-	for id > 0 {
-		rem := int(id) % alphabetLen
-		nums = append(nums, rem)
-
-		id /= uint32(alphabetLen)
-	}
-
-	var sb strings.Builder
-	for i := range nums {
-		idx := nums[i]
-		sb.WriteByte(alphabet[idx])
-	}
-
-	return sb.String()
 }

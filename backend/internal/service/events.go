@@ -15,10 +15,12 @@ const (
 	eventTypeFollow = 2
 )
 
+//go:generate go run github.com/vektra/mockery/v2@v2.42.1 --name EventsServiceConsumer
 type EventsServiceConsumer interface {
 	ConsumeEvents()
 }
 
+//go:generate go run github.com/vektra/mockery/v2@v2.42.1 --name EventsServiceProducer
 type EventsServiceProducer interface {
 	ProduceEvent(event domain.URLEvent)
 }
