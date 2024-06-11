@@ -10,6 +10,7 @@ import (
 	"CoolUrlShortener/internal/domain"
 	"CoolUrlShortener/internal/errs"
 	"CoolUrlShortener/internal/repository"
+	"github.com/google/uuid"
 )
 
 const (
@@ -23,7 +24,7 @@ var (
 type URLService interface {
 	GetLongURL(ctx context.Context, shortUrl string) (string, error)
 	SaveURL(ctx context.Context, longURL string) (string, error)
-	shortenURL(longURL string) (int64, string)
+	shortenURL(id uint32) string
 }
 
 type urlService struct {
@@ -98,9 +99,10 @@ func (s *urlService) SaveURL(ctx context.Context, longURL string) (string, error
 		return "", err
 	}
 
-	id, shortUrl := s.shortenURL(longURL)
+	id := uuid.New().ID()
+	shortUrl := s.shortenURL(id)
 	urlData := domain.URLData{
-		ID:        id,
+		ID:        int64(id),
 		ShortUrl:  shortUrl,
 		LongUrl:   longURL,
 		CreatedAt: time.Now(),
@@ -126,20 +128,13 @@ func (s *urlService) SaveURL(ctx context.Context, longURL string) (string, error
 	return shortUrl, nil
 }
 
-func (s *urlService) shortenURL(longURL string) (int64, string) {
-	sum := 0
-
-	for _, r := range longURL {
-		sum += int(r)
-	}
-
-	id := int64(sum)
+func (s *urlService) shortenURL(id uint32) string {
 	nums := make([]int, 0)
-	for sum > 0 {
-		rem := sum % alphabetLen
+	for id > 0 {
+		rem := int(id) % alphabetLen
 		nums = append(nums, rem)
 
-		sum /= alphabetLen
+		id /= uint32(alphabetLen)
 	}
 
 	var sb strings.Builder
@@ -148,5 +143,5 @@ func (s *urlService) shortenURL(longURL string) (int64, string) {
 		sb.WriteByte(alphabet[idx])
 	}
 
-	return id, sb.String()
+	return sb.String()
 }
