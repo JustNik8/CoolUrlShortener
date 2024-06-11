@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 )
 
+//go:generate go run github.com/vektra/mockery/v2@v2.42.1 --name URLService
 type URLService interface {
 	GetLongURL(ctx context.Context, shortUrl string) (string, error)
 	SaveURL(ctx context.Context, longURL string) (string, error)
