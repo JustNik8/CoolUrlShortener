@@ -14,11 +14,20 @@ import (
 )
 
 const (
-	alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+	alphabet          = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+	protocolSeparator = "://"
+	defaultProtocol   = "https"
 )
 
 var (
 	alphabetLen = len(alphabet)
+)
+
+var (
+	availableProtocols = map[string]struct{}{
+		"http":  {},
+		"https": {},
+	}
 )
 
 type URLService interface {

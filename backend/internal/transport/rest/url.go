@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"strings"
 
 	"CoolUrlShortener/internal/errs"
 	"CoolUrlShortener/internal/service"
@@ -18,14 +17,6 @@ import (
 
 const (
 	shortUrlPathValue = "short_url"
-	protocolSeparator = "://"
-)
-
-var (
-	availableProtocols = map[string]struct{}{
-		"http":  {},
-		"https": {},
-	}
 )
 
 type URLHandler struct {
@@ -71,8 +62,7 @@ func (h *URLHandler) FollowUrl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	redirectURL := fmt.Sprintf("https://%s", longURL)
-	http.Redirect(w, r, redirectURL, http.StatusFound)
+	http.Redirect(w, r, longURL, http.StatusFound)
 }
 
 func (h *URLHandler) SaveURL(w http.ResponseWriter, r *http.Request) {
@@ -89,13 +79,7 @@ func (h *URLHandler) SaveURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	host, err := h.extractHost(longURLData.LongURL)
-	if err != nil {
-		response.BadRequest(w, err.Error())
-		return
-	}
-
-	shortURL, err := h.urlService.SaveURL(context.Background(), host)
+	shortURL, err := h.urlService.SaveURL(context.Background(), longURLData.LongURL)
 	if err != nil {
 		h.logger.Error(err.Error())
 		response.InternalServerError(w)
@@ -103,7 +87,7 @@ func (h *URLHandler) SaveURL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	urlData := dto.URlData{
-		LongURL:  host,
+		LongURL:  longURLData.LongURL,
 		ShortURL: shortURL,
 	}
 	urlBody, err := json.Marshal(urlData)
@@ -114,18 +98,4 @@ func (h *URLHandler) SaveURL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.WriteResponse(w, http.StatusOK, urlBody)
-}
-
-func (h *URLHandler) extractHost(longURL string) (string, error) {
-	idx := strings.Index(longURL, protocolSeparator)
-	if idx == -1 {
-		return longURL, nil
-	}
-
-	protocol := longURL[:idx]
-	_, isAvailable := availableProtocols[protocol]
-	if !isAvailable {
-		return "", fmt.Errorf("protocol %s is not available", protocol)
-	}
-	return longURL[idx+len(protocolSeparator):], nil
 }

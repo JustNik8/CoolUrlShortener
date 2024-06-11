@@ -5,7 +5,6 @@ CREATE TABLE IF NOT EXISTS "url_data"
     "long_url"   TEXT        NOT NULL,
     "created_at" DATE        NOT NULL
 );
-
 ALTER TABLE
     "url_data"
     ADD PRIMARY KEY ("id");
