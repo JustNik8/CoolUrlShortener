@@ -1,0 +1,148 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "API Server for shorten urls",
+        "title": "CoolURLShortener API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "basePath": "/",
+    "paths": {
+        "/api/healthcheck": {
+            "get": {
+                "description": "Возвращает код 200, когда сервис работоспособен",
+                "tags": [
+                    "healthcheck"
+                ],
+                "summary": "Проверка работоспособности сервиса",
+                "operationId": "healthcheck",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/api/save_url": {
+            "post": {
+                "description": "Принимает исходную ссылку, создает короткую ссылку и возвращает короткую ссылку",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "url"
+                ],
+                "summary": "Создание и сохранение короткой ссылки по исходной ссылки",
+                "operationId": "save-url",
+                "parameters": [
+                    {
+                        "description": "Длинная ссылка",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.LongURLData"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.URlData"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    }
+                }
+            }
+        },
+        "/{short_url}": {
+            "get": {
+                "description": "Принимает короткую ссылку в path параметрах и производит редирект на исходную ссылку",
+                "tags": [
+                    "url"
+                ],
+                "summary": "Редирект с короткой ссылки на исходную ссылку",
+                "operationId": "follow-url",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "короткая ссылка",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "302": {
+                        "description": "Found"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "dto.LongURLData": {
+            "type": "object",
+            "required": [
+                "long_url"
+            ],
+            "properties": {
+                "long_url": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.URlData": {
+            "type": "object",
+            "properties": {
+                "long_url": {
+                    "type": "string"
+                },
+                "short_url": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.Body": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}
