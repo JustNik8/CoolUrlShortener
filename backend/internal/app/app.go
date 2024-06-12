@@ -111,7 +111,7 @@ func Run() {
 	healthCheckHandler := rest.NewHealthCheckHandler(logger)
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/docs/", httpSwagger.WrapHandler)
+	mux.HandleFunc("/api/docs/", httpSwagger.WrapHandler)
 	mux.HandleFunc("GET /api/healthcheck", healthCheckHandler.HealthCheck)
 	mux.HandleFunc("POST /api/save_url", urlHandler.SaveURL)
 	mux.HandleFunc("GET /{short_url}", urlHandler.FollowUrl)
