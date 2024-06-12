@@ -6,6 +6,12 @@ on:
       - backend/**
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      myInput:
+        description: 'User Input:'
+        required: true
+        default: "Run"
 
 jobs:
   job1:
