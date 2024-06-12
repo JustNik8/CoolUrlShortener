@@ -1,12 +1,24 @@
 let shortUrlElem = document.getElementById("short_url");
 let urlInput = document.getElementById("url_input")
 
-console.log(shortUrlElem);
+let serverDomain = ""
+setupServerDomain()
+
+function setupServerDomain() {
+    fetch("domain.txt")
+        .then(response => response.text())
+        .then(text => {
+            serverDomain = text
+        })
+
+}
 
 async function onShortenerClick() {
     let longURL = urlInput.value
+    let url = `http://${serverDomain}/api/save_url`
+    console.log(url)
 
-    let response = await fetch("http://localhost:8000/api/save_url", {
+    let response = await fetch(url, {
         method: "POST",
         body: JSON.stringify({
             long_url: longURL
