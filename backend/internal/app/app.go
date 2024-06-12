@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 
 	"CoolUrlShortener/internal/domain"
 	"CoolUrlShortener/internal/repository"
@@ -41,15 +42,17 @@ const (
 	clickhouseHost     = "CLICKHOUSE_HOST"
 	clickhousePort     = "CLICKHOUSE_PORT"
 	clickhouseDatabase = "CLICKHOUSE_DATABASE"
+	batchTimePeriod    = "BATCH_TIME_PERIOD"
 )
 
 func Run() {
 	eventsCh := make(chan domain.URLEvent)
+	doneCh := make(chan struct{})
 
 	defer func() {
-		if r := recover(); r != nil {
-			close(eventsCh)
-		}
+		close(eventsCh)
+		doneCh <- struct{}{}
+		close(doneCh)
 	}()
 
 	serverPort := os.Getenv(serverPortKey)
@@ -85,7 +88,10 @@ func Run() {
 		panic(err)
 	}
 
-	eventsServiceConsumer := service.NewEventsServiceConsumer(logger, eventsCh, eventsWriter)
+	eventsServiceConsumer, err := setupEventsServiceConsumer(logger, eventsCh, doneCh, eventsWriter)
+	if err != nil {
+		panic(err)
+	}
 	eventsServiceProducer := service.NewEventsServiceProducer(eventsCh)
 
 	redisClient, err := setupRedisClient()
@@ -230,4 +236,25 @@ func setupEventsWriter(logger *slog.Logger) (repository.EventsWriter, error) {
 	)
 
 	return eventsWriter, err
+}
+
+func setupEventsServiceConsumer(
+	logger *slog.Logger,
+	eventsCh <-chan domain.URLEvent,
+	doneCh <-chan struct{},
+	eventsWriter repository.EventsWriter,
+) (service.EventsServiceConsumer, error) {
+	periodTime := os.Getenv(batchTimePeriod)
+	if periodTime == "" {
+		return nil, fmt.Errorf("you did not provice env: %s", batchTimePeriod)
+	}
+
+	duration, err := time.ParseDuration(periodTime)
+	if err != nil {
+		return nil, err
+	}
+	periodCh := time.NewTicker(duration).C
+
+	eventsServiceConsumer := service.NewEventsServiceConsumer(logger, eventsCh, periodCh, doneCh, eventsWriter)
+	return eventsServiceConsumer, nil
 }

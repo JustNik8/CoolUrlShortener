@@ -28,17 +28,23 @@ type EventsServiceProducer interface {
 type eventsServiceConsumer struct {
 	logger       *slog.Logger
 	eventsCh     <-chan domain.URLEvent
+	periodCh     <-chan time.Time
+	doneCh       <-chan struct{}
 	eventsWriter repository.EventsWriter
 }
 
 func NewEventsServiceConsumer(
 	logger *slog.Logger,
 	eventsCh <-chan domain.URLEvent,
+	periodCh <-chan time.Time,
+	doneCh <-chan struct{},
 	clickhouseWriter repository.EventsWriter,
 ) EventsServiceConsumer {
 	return &eventsServiceConsumer{
 		logger:       logger,
 		eventsCh:     eventsCh,
+		periodCh:     periodCh,
+		doneCh:       doneCh,
 		eventsWriter: clickhouseWriter,
 	}
 }
@@ -50,11 +56,17 @@ func (s *eventsServiceConsumer) ConsumeEvents() {
 
 		for {
 			select {
-			case event := <-s.eventsCh:
+			case event, isOpen := <-s.eventsCh:
+				if !isOpen {
+					return
+				}
 				m.Lock()
 				events = append(events, event)
 				m.Unlock()
-			case <-time.NewTicker(1 * time.Second).C:
+			case _, isOpen := <-s.periodCh:
+				if !isOpen {
+					return
+				}
 				if len(events) == 0 {
 					continue
 				}
@@ -63,6 +75,8 @@ func (s *eventsServiceConsumer) ConsumeEvents() {
 					s.logger.Error(err.Error())
 				}
 				events = make([]domain.URLEvent, 0, defaultEventCap)
+			case <-s.doneCh:
+				return
 			}
 		}
 	}()
