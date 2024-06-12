@@ -141,8 +141,6 @@ func (h *URLHandler) SaveURL(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *URLHandler) SaveURLOptions(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Access-Control-Allow-Origin", "*")
-	w.Header().Add("Access-Control-Allow-Credentials", "true")
 	w.Header().Add("Access-Control-Request-Method", "POST")
 	w.Header().Add("Access-Control-Request-Headers", "x-requested-with")
 	w.Header().Add("Origin", "*")
