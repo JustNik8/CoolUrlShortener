@@ -95,6 +95,11 @@ services:
     volumes:
       - clickhouse_vol:/var/lib/clickhouse/
 
+  frontend:
+    build: ./frontend
+    ports:
+      - "80:80"
+
 volumes:
   pg_vol:
   redis_vol:
