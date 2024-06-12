@@ -20,3 +20,13 @@ async function onShortenerClick() {
     shortUrlElem.innerHTML = json.short_url;
 }
 
+
+function copyToClipboard() {
+    let copyText = shortUrlElem.innerHTML
+
+    // Copy the text inside the text field
+    navigator.clipboard.writeText(copyText)
+        .then(() => console.log("Copied"))
+        .catch(err => console.log(err));
+
+}

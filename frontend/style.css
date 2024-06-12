@@ -6,6 +6,42 @@ body {
     justify-content: center;
 }
 
+.main_container {
+    width: 30%;
+}
+
 .short_url {
     display: inline;
+}
+
+.form-control {
+    position: relative;
+    font-size: 16px;
+    height: auto;
+    padding: 11px;
+    width: 50%;
+
+    &:focus {
+        z-index: 2;
+    }
+}
+
+.shorten_btn {
+    cursor: pointer;
+    color: #fff; /* цвет текста */
+    text-decoration: none; /* убирать подчёркивание у ссылок */
+    user-select: none; /* убирать выделение текста */
+    background: rgb(212, 75, 56); /* фон кнопки */
+    padding: .7em 1.5em; /* отступ от текста */
+    outline: none; /* убирать контур в Mozilla */
+}
+
+/* при наведении курсора мышки */
+a.shorten_btn:hover {
+    background: rgb(232, 95, 76);
+}
+
+/* при нажатии */
+a.shorten_btn:active {
+    background: rgb(152, 15, 0);
 }

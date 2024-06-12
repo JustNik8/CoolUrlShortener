@@ -10,15 +10,20 @@
     <title>URL shortener</title>
 </head>
 <body>
-<div>
+<div class="main_container">
     <h1>Сокращатель ссылок</h1>
 
-    <label for="url_input">Ссылка:</label><br>
-    <input id="url_input" type="text"/>
-    <button id="shorten" onclick="onShortenerClick()">Сократить</button>
+    <label for="url_input"></label>
+    <input id="url_input" class="form-control" placeholder="Ссылка" type="text"/>
+    <a id="shorten" class="shorten_btn" onclick="onShortenerClick()">Сократить</a>
+    <br>
     <br>
     <p class="short_url">Короткая ссылка:</p>
     <p id="short_url" class="short_url" style="visibility: hidden"></p>
+
+    <br>
+    <br>
+    <a id="copy" class="shorten_btn" onclick="copyToClipboard()">Копировать</a>
 </div>
 <script src="index.js"></script>
 </body>
