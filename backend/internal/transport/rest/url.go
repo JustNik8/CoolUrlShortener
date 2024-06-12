@@ -97,7 +97,7 @@ func (h *URLHandler) FollowUrl(w http.ResponseWriter, r *http.Request) {
 //	@Failure		500		{object}	response.Body
 //	@Router			/api/save_url [post]
 func (h *URLHandler) SaveURL(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Access-Control-Allow-Origin", "*")
+	w.Header().Add("Access-Control-Allow-Origin", r.Host)
 	w.Header().Add("Access-Control-Allow-Credentials", "true")
 
 	var longURLData dto.LongURLData
