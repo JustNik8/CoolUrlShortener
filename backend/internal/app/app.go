@@ -19,6 +19,8 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
+
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 const (
@@ -109,6 +111,7 @@ func Run() {
 	healthCheckHandler := rest.NewHealthCheckHandler(logger)
 
 	mux := http.NewServeMux()
+	mux.HandleFunc("/docs/", httpSwagger.WrapHandler)
 	mux.HandleFunc("GET /api/healthcheck", healthCheckHandler.HealthCheck)
 	mux.HandleFunc("POST /api/save_url", urlHandler.SaveURL)
 	mux.HandleFunc("GET /{short_url}", urlHandler.FollowUrl)

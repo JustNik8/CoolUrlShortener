@@ -1,0 +1,99 @@
+basePath: /
+definitions:
+  dto.LongURLData:
+    properties:
+      long_url:
+        type: string
+    required:
+    - long_url
+    type: object
+  dto.URlData:
+    properties:
+      long_url:
+        type: string
+      short_url:
+        type: string
+    type: object
+  response.Body:
+    properties:
+      message:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: API Server for shorten urls
+  title: CoolURLShortener API
+  version: "1.0"
+paths:
+  /{short_url}:
+    get:
+      description: Принимает короткую ссылку в path параметрах и производит редирект
+        на исходную ссылку
+      operationId: follow-url
+      parameters:
+      - description: короткая ссылка
+        in: query
+        name: id
+        required: true
+        type: string
+      responses:
+        "302":
+          description: Found
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Body'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Body'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Body'
+      summary: Редирект с короткой ссылки на исходную ссылку
+      tags:
+      - url
+  /api/healthcheck:
+    get:
+      description: Возвращает код 200, когда сервис работоспособен
+      operationId: healthcheck
+      responses:
+        "200":
+          description: OK
+      summary: Проверка работоспособности сервиса
+      tags:
+      - healthcheck
+  /api/save_url:
+    post:
+      consumes:
+      - application/json
+      description: Принимает исходную ссылку, создает короткую ссылку и возвращает
+        короткую ссылку
+      operationId: save-url
+      parameters:
+      - description: Длинная ссылка
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/dto.LongURLData'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.URlData'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Body'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Body'
+      summary: Создание и сохранение короткой ссылки по исходной ссылки
+      tags:
+      - url
+swagger: "2.0"

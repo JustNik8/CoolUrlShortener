@@ -37,6 +37,16 @@ func NewURLHandler(
 	}
 }
 
+// FollowUrl docs
+//	@Summary		Редирект с короткой ссылки на исходную ссылку
+//	@Tags			url
+//	@Description	Принимает короткую ссылку в path параметрах и производит редирект на исходную ссылку
+//	@ID				follow-url
+//	@Param			id	query	string	true	"короткая ссылка"
+//	@Success		302
+//	@Failure		400,404	{object}	response.Body
+//	@Failure		500		{object}	response.Body
+//	@Router			/{short_url} [get]
 func (h *URLHandler) FollowUrl(w http.ResponseWriter, r *http.Request) {
 	h.logger.Info(r.URL.Host)
 	h.logger.Info(r.URL.Path)
@@ -67,6 +77,18 @@ func (h *URLHandler) FollowUrl(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, longURL, http.StatusFound)
 }
 
+// SaveURL docs
+//	@Summary		Создание и сохранение короткой ссылки по исходной ссылки
+//	@Tags			url
+//	@Description	Принимает исходную ссылку, создает короткую ссылку и возвращает короткую ссылку
+//	@ID				save-url
+//	@Accept			json
+//	@Produce		json
+//	@Param			input	body		dto.LongURLData	true	"Длинная ссылка"
+//	@Success		200		{object}	dto.URlData
+//	@Failure		400		{object}	response.Body
+//	@Failure		500		{object}	response.Body
+//	@Router			/api/save_url [post]
 func (h *URLHandler) SaveURL(w http.ResponseWriter, r *http.Request) {
 	var longURLData dto.LongURLData
 	err := json.NewDecoder(r.Body).Decode(&longURLData)
