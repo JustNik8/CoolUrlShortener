@@ -45,6 +45,8 @@ const (
 	clickhousePort     = "CLICKHOUSE_PORT"
 	clickhouseDatabase = "CLICKHOUSE_DATABASE"
 	batchTimePeriod    = "BATCH_TIME_PERIOD"
+
+	serverDomainKey = "SERVER_DOMAIN"
 )
 
 func Run() {
@@ -62,6 +64,13 @@ func Run() {
 		msg := fmt.Sprintf("You did not provide env: %s", serverPortKey)
 		panic(msg)
 	}
+
+	serverDomain := os.Getenv(serverDomainKey)
+	if serverDomain == "" {
+		msg := fmt.Sprintf("You did not provide env: %s", serverPortKey)
+		panic(msg)
+	}
+
 	env := os.Getenv(envKey)
 	if env == "" {
 		msg := fmt.Sprintf("You did not provide env: %s", envKey)
@@ -106,7 +115,7 @@ func Run() {
 	urlCache := rediscache.NewURLCacheRedis(redisClient)
 	urlRepo := postgresql.NewUrlRepoPostgres(dbPool)
 	urlService := service.NewURLService(logger, urlRepo, urlCache, eventsServiceProducer, base62URLShortener)
-	urlHandler := rest.NewURLHandler(logger, urlService, validate)
+	urlHandler := rest.NewURLHandler(logger, urlService, validate, serverDomain)
 
 	healthCheckHandler := rest.NewHealthCheckHandler(logger)
 
@@ -114,6 +123,7 @@ func Run() {
 	mux.HandleFunc("/api/docs/", httpSwagger.WrapHandler)
 	mux.HandleFunc("GET /api/healthcheck", healthCheckHandler.HealthCheck)
 	mux.HandleFunc("POST /api/save_url", urlHandler.SaveURL)
+	mux.HandleFunc("OPTIONS /api/save_url", urlHandler.SaveURLOptions)
 	mux.HandleFunc("GET /{short_url}", urlHandler.FollowUrl)
 
 	addr := fmt.Sprintf(":%s", serverPort)

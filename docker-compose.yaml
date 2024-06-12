@@ -41,6 +41,8 @@ services:
       CLICKHOUSE_PORT: "9000"
       CLICKHOUSE_DATABASE: "default"
       BATCH_TIME_PERIOD: "1s"
+
+      SERVER_DOMAIN: "localhost:8000"
     networks:
       - service_network
     healthcheck:
