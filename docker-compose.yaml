@@ -40,6 +40,7 @@ services:
       CLICKHOUSE_HOST: "clickhouse"
       CLICKHOUSE_PORT: "9000"
       CLICKHOUSE_DATABASE: "default"
+      BATCH_TIME_PERIOD: "1s"
     networks:
       - service_network
     healthcheck:
