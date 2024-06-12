@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       LOGIN: ${{ secrets.DOCKERHUB_LOGIN }}
-      NAME: ${{ secrets.DOCKER_NAME }}
+      NAME: ${{ secrets.DOCKER_BACKEND_NAME }}
     steps:
       - uses: actions/checkout@v2
       - name: Build image
