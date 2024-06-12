@@ -16,7 +16,6 @@ function setupServerDomain() {
 async function onShortenerClick() {
     let longURL = urlInput.value
     let url = `http://${serverDomain}/api/save_url`
-    console.log(url)
 
     let response = await fetch(url, {
         method: "POST",
