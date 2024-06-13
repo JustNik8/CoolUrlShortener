@@ -24,9 +24,9 @@ jobs:
       - uses: actions/checkout@v2
       - name: Build frontend image
         run: docker build -t $LOGIN/$FRONTEND_NAME:latest ./frontend
-      - name: Build url_shortener_service image
+      - name: Build URL Shortener Service image
         run: docker build -t $LOGIN/$URL_SHORTENER_SERVICE_NAME:latest ./url_shortener_service
-      - name: Build analytics_service image
+      - name: Build Analytics Service image
         run: docker build -t $LOGIN/$ANALYTICS_SERVICE_NAME:latest ./analytics_service
 
       - name: Docker login
@@ -34,9 +34,9 @@ jobs:
 
       - name: Push frontend image
         run: docker push $LOGIN/$FRONTEND_NAME:latest
-      - name: Push url_shortener_service image
+      - name: Push URL Shortener Service image
         run: docker push $LOGIN/$URL_SHORTENER_SERVICE_NAME:latest
-      - name: Push analytics_service image
+      - name: Push Analytics Service image
         run: docker push $LOGIN/$ANALYTICS_SERVICE_NAME:latest
 
   job2:
