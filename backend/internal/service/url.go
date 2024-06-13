@@ -9,6 +9,7 @@ import (
 	"CoolUrlShortener/internal/domain"
 	"CoolUrlShortener/internal/errs"
 	"CoolUrlShortener/internal/repository"
+	"CoolUrlShortener/internal/repository/models"
 	"CoolUrlShortener/pkg/shortener"
 	"github.com/google/uuid"
 )
@@ -20,38 +21,38 @@ type URLService interface {
 }
 
 type urlService struct {
-	logger                *slog.Logger
-	urlRepo               repository.UrlRepo
-	urlCache              repository.URLCache
-	eventsServiceProducer EventsServiceProducer
-	urlShortener          shortener.URLShortener
+	logger         *slog.Logger
+	urlRepo        repository.UrlRepo
+	urlCache       repository.URLCache
+	eventsProducer repository.EventsProducer
+	urlShortener   shortener.URLShortener
 }
 
 func NewURLService(
 	logger *slog.Logger,
 	repo repository.UrlRepo,
 	urlCache repository.URLCache,
-	eventsServiceProducer EventsServiceProducer,
+	eventsProducer repository.EventsProducer,
 	urlShortener shortener.URLShortener,
 ) URLService {
 	return &urlService{
-		logger:                logger,
-		urlRepo:               repo,
-		urlCache:              urlCache,
-		eventsServiceProducer: eventsServiceProducer,
-		urlShortener:          urlShortener,
+		logger:         logger,
+		urlRepo:        repo,
+		urlCache:       urlCache,
+		eventsProducer: eventsProducer,
+		urlShortener:   urlShortener,
 	}
 }
 
 func (s *urlService) GetLongURL(ctx context.Context, shortURL string) (string, error) {
 	longURLCache, err := s.urlCache.GetLongURL(ctx, shortURL)
 	if err == nil {
-		s.eventsServiceProducer.ProduceEvent(
-			domain.URLEvent{
+		s.eventsProducer.ProduceEvent(
+			models.URLEvent{
 				LongURL:   longURLCache,
 				ShortURL:  shortURL,
-				EventTime: time.Now(),
-				EventType: eventTypeFollow,
+				EventTime: time.Now().Unix(),
+				EventType: models.EventTypeFollow,
 			},
 		)
 		return longURLCache, nil
@@ -66,12 +67,12 @@ func (s *urlService) GetLongURL(ctx context.Context, shortURL string) (string, e
 		s.logger.Error(err.Error())
 	}
 
-	s.eventsServiceProducer.ProduceEvent(
-		domain.URLEvent{
+	s.eventsProducer.ProduceEvent(
+		models.URLEvent{
 			LongURL:   longURL,
 			ShortURL:  shortURL,
-			EventTime: time.Now(),
-			EventType: eventTypeFollow,
+			EventTime: time.Now().Unix(),
+			EventType: models.EventTypeFollow,
 		},
 	)
 	return longURL, nil
@@ -80,12 +81,12 @@ func (s *urlService) GetLongURL(ctx context.Context, shortURL string) (string, e
 func (s *urlService) SaveURL(ctx context.Context, longURL string) (string, error) {
 	gotShortURL, err := s.urlRepo.GetShortURLByLongURL(ctx, longURL)
 	if err == nil {
-		s.eventsServiceProducer.ProduceEvent(
-			domain.URLEvent{
+		s.eventsProducer.ProduceEvent(
+			models.URLEvent{
 				LongURL:   longURL,
 				ShortURL:  gotShortURL,
-				EventTime: time.Now(),
-				EventType: eventTypeCreate,
+				EventTime: time.Now().Unix(),
+				EventType: models.EventTypeCreate,
 			},
 		)
 		return gotShortURL, nil
@@ -112,12 +113,12 @@ func (s *urlService) SaveURL(ctx context.Context, longURL string) (string, error
 		s.logger.Error(err.Error())
 	}
 
-	s.eventsServiceProducer.ProduceEvent(
-		domain.URLEvent{
+	s.eventsProducer.ProduceEvent(
+		models.URLEvent{
 			LongURL:   longURL,
 			ShortURL:  shortUrl,
-			EventTime: time.Now(),
-			EventType: eventTypeCreate,
+			EventTime: time.Now().Unix(),
+			EventType: models.EventTypeCreate,
 		},
 	)
 	return shortUrl, nil

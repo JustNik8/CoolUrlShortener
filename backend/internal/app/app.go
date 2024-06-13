@@ -6,10 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"time"
 
-	"CoolUrlShortener/internal/domain"
-	"CoolUrlShortener/internal/repository"
 	"CoolUrlShortener/internal/repository/events"
 	"CoolUrlShortener/internal/repository/postgresql"
 	"CoolUrlShortener/internal/repository/rediscache"
@@ -28,7 +25,6 @@ const (
 	envProd  = "prod"
 
 	envKey           = "ENV"
-	serverPortKey    = "SERVER_PORT"
 	databaseUsername = "DATABASE_USERNAME"
 	databasePassword = "DATABASE_PASSWORD"
 	databaseHost     = "DATABASE_HOST"
@@ -39,35 +35,22 @@ const (
 	redisPort     = "REDIS_PORT"
 	redisPassword = "REDIS_PASSWORD"
 
-	clickhouseUsername = "CLICKHOUSE_USERNAME"
-	clickhousePassword = "CLICKHOUSE_PASSWORD"
-	clickhouseHost     = "CLICKHOUSE_HOST"
-	clickhousePort     = "CLICKHOUSE_PORT"
-	clickhouseDatabase = "CLICKHOUSE_DATABASE"
-	batchTimePeriod    = "BATCH_TIME_PERIOD"
-
 	serverDomainKey = "SERVER_DOMAIN"
+
+	serverPort = "8000"
 )
 
 func Run() {
-	eventsCh := make(chan domain.URLEvent)
 	doneCh := make(chan struct{})
 
 	defer func() {
-		close(eventsCh)
 		doneCh <- struct{}{}
 		close(doneCh)
 	}()
 
-	serverPort := os.Getenv(serverPortKey)
-	if serverPort == "" {
-		msg := fmt.Sprintf("You did not provide env: %s", serverPortKey)
-		panic(msg)
-	}
-
 	serverDomain := os.Getenv(serverDomainKey)
 	if serverDomain == "" {
-		msg := fmt.Sprintf("You did not provide env: %s", serverPortKey)
+		msg := fmt.Sprintf("You did not provide env: %s", serverDomainKey)
 		panic(msg)
 	}
 
@@ -94,16 +77,10 @@ func Run() {
 
 	validate := validator.New(validator.WithRequiredStructEnabled())
 
-	eventsWriter, err := setupEventsWriter(logger)
+	eventsServiceProducer, err := events.NewKafkaEventProducer(logger, []string{"kafka1:9092"}, nil, doneCh)
 	if err != nil {
 		panic(err)
 	}
-
-	eventsServiceConsumer, err := setupEventsServiceConsumer(logger, eventsCh, doneCh, eventsWriter)
-	if err != nil {
-		panic(err)
-	}
-	eventsServiceProducer := service.NewEventsServiceProducer(eventsCh)
 
 	redisClient, err := setupRedisClient()
 	if err != nil {
@@ -131,9 +108,6 @@ func Run() {
 		Addr:    addr,
 		Handler: mux,
 	}
-
-	logger.Info("Start consume url events")
-	eventsServiceConsumer.ConsumeEvents()
 
 	logger.Info(fmt.Sprintf("Run server on %s", addr))
 	err = server.ListenAndServe()
@@ -215,59 +189,4 @@ func setupRedisClient() (*redis.Client, error) {
 	})
 
 	return redisClient, nil
-}
-
-func setupEventsWriter(logger *slog.Logger) (repository.EventsWriter, error) {
-	username := os.Getenv(clickhouseUsername)
-	if username == "" {
-		return nil, fmt.Errorf("you did not provide env: %s", clickhouseUsername)
-	}
-	password := os.Getenv(clickhousePassword)
-	if password == "" {
-		return nil, fmt.Errorf("you did not provice env: %s", clickhousePassword)
-	}
-	host := os.Getenv(clickhouseHost)
-	if host == "" {
-		return nil, fmt.Errorf("you did not provide env: %s", clickhouseHost)
-	}
-	port := os.Getenv(clickhousePort)
-	if port == "" {
-		return nil, fmt.Errorf("you did not provide env: %s", clickhousePort)
-	}
-
-	database := os.Getenv(clickhouseDatabase)
-	if database == "" {
-		return nil, fmt.Errorf("you did not provice env: %s", clickhouseDatabase)
-	}
-	eventsWriter, err := events.NewEventsWriterClickhouse(
-		logger,
-		database,
-		username,
-		password,
-		host,
-		port,
-	)
-
-	return eventsWriter, err
-}
-
-func setupEventsServiceConsumer(
-	logger *slog.Logger,
-	eventsCh <-chan domain.URLEvent,
-	doneCh <-chan struct{},
-	eventsWriter repository.EventsWriter,
-) (service.EventsServiceConsumer, error) {
-	periodTime := os.Getenv(batchTimePeriod)
-	if periodTime == "" {
-		return nil, fmt.Errorf("you did not provice env: %s", batchTimePeriod)
-	}
-
-	duration, err := time.ParseDuration(periodTime)
-	if err != nil {
-		return nil, err
-	}
-	periodCh := time.NewTicker(duration).C
-
-	eventsServiceConsumer := service.NewEventsServiceConsumer(logger, eventsCh, periodCh, doneCh, eventsWriter)
-	return eventsServiceConsumer, nil
 }

@@ -8,10 +8,3 @@ type URLData struct {
 	LongUrl   string
 	CreatedAt time.Time
 }
-
-type URLEvent struct {
-	LongURL   string
-	ShortURL  string
-	EventTime time.Time
-	EventType int8
-}
