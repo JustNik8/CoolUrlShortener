@@ -3,7 +3,7 @@ name: Build and Push Backend
 on:
   push:
     paths:
-      - url_shortener_service/**
+      - /**
     branches:
       - main
   workflow_dispatch:
@@ -19,15 +19,27 @@ jobs:
     runs-on: ubuntu-latest
     env:
       LOGIN: ${{ secrets.DOCKERHUB_LOGIN }}
-      NAME: ${{ secrets.DOCKER_BACKEND_NAME }}
+      FRONTEND_NAME: ${{ secrets.DOCKER_FRONTED_NAME }}
+      URL_SHORTENER_SERVICE_NAME: ${{ secrets.DOCKER_URL_SHORTENER_SERVICE_NAME }}
+      ANALYTICS_SERVICE_NAME: ${{ secrets.DOCKER_ANALYTICS_SERVICE_NAME }}
     steps:
       - uses: actions/checkout@v2
-      - name: Build image
-        run: docker build -t $LOGIN/$NAME:latest ./url_shortener_service
+      - name: Build frontend image
+        run: docker build -t $LOGIN/$FRONTEND_NAME:latest ./frontend
+      - name: Build url_shortener_service image
+        run: docker build -t $LOGIN/$URL_SHORTENER_SERVICE_NAME:latest ./url_shortener_service
+      - name: Build analytics_service image
+        run: docker build -t $LOGIN/$ANALYTICS_SERVICE_NAME:latest ./analytics_service
+
       - name: Docker login
         run: echo ${{ secrets.DOCKERHUB_PASS }} | docker login -u ${{ secrets.DOCKERHUB_LOGIN }} --password-stdin
-      - name: Push image
-        run: docker push $LOGIN/$NAME:latest
+
+      - name: Push frontend image
+        run: docker push $LOGIN/$FRONTEND_NAME:latest
+      - name: Push url_shortener_service image
+        run: docker push $LOGIN/$URL_SHORTENER_SERVICE_NAME:latest
+      - name: Push analytics_service image
+        run: docker push $LOGIN/$ANALYTICS_SERVICE_NAME:latest
 
   job2:
     name: Publish
