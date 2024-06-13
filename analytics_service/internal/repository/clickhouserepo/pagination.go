@@ -19,7 +19,7 @@ func NewPaginationRepoClickhouse(conn driver.Conn) repository.PaginationRepo {
 }
 
 func (r *paginationRepoClickhouse) GetRecordsCount(table string) (int, error) {
-	sqlTableQuery := fmt.Sprintf("SELECT count(*) FROM %s", table)
+	sqlTableQuery := fmt.Sprintf("SELECT count(*) FROM %s FINAL", table)
 	row := r.conn.QueryRow(context.Background(), sqlTableQuery)
 
 	var recordsCount uint64
