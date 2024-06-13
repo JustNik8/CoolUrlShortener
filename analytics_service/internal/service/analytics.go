@@ -8,7 +8,7 @@ import (
 )
 
 type AnalyticsService interface {
-	GetTopUrls(ctx context.Context, limit int) ([]domain.TopURLData, error)
+	GetTopUrls(ctx context.Context, paginationParams domain.PaginationParams) ([]domain.TopURLData, error)
 }
 
 type analyticsService struct {
@@ -23,6 +23,6 @@ func NewAnalyticsService(
 	}
 }
 
-func (s *analyticsService) GetTopUrls(ctx context.Context, limit int) ([]domain.TopURLData, error) {
-	return s.analyticsRepo.GetTopUrls(ctx, limit)
+func (s *analyticsService) GetTopUrls(ctx context.Context, paginationParams domain.PaginationParams) ([]domain.TopURLData, error) {
+	return s.analyticsRepo.GetTopUrls(ctx, paginationParams)
 }

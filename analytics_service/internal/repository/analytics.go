@@ -7,5 +7,5 @@ import (
 )
 
 type AnalyticsRepo interface {
-	GetTopUrls(ctx context.Context, limit int) ([]domain.TopURLData, error)
+	GetTopUrls(ctx context.Context, paginationParams domain.PaginationParams) ([]domain.TopURLData, error)
 }

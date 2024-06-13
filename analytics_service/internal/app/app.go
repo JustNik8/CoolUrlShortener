@@ -5,12 +5,14 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 
 	"analytics_service/internal/converter"
-	"analytics_service/internal/repository"
-	"analytics_service/internal/repository/analytics"
+	"analytics_service/internal/repository/clickhouserepo"
 	"analytics_service/internal/service"
 	"analytics_service/internal/transport/rest"
+	"github.com/ClickHouse/clickhouse-go/v2"
+	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 )
 
 const (
@@ -41,13 +43,24 @@ func Run() {
 	}
 
 	topURLConverter := converter.NewTopURLConverter()
+	paginationConverter := converter.NewPaginationConverter()
 
-	analyticsRepo, err := setupAnalyticsRepo(logger)
+	clickhouseConn, err := setupClickhouseConn()
+	if err != nil {
+		panic(err)
+	}
+
+	paginationRepo := clickhouserepo.NewPaginationRepoClickhouse(clickhouseConn)
+	paginationService := service.NewPaginationService(paginationRepo)
+
+	analyticsRepo, err := clickhouserepo.NewAnalyticsRepoClickhouse(logger, clickhouseConn)
 	if err != nil {
 		panic(err)
 	}
 	analyticsService := service.NewAnalyticsService(analyticsRepo)
-	analyticsHandler := rest.NewAnalyticsHandler(logger, analyticsService, topURLConverter)
+	analyticsHandler := rest.NewAnalyticsHandler(
+		logger, analyticsService, paginationService, topURLConverter, paginationConverter,
+	)
 
 	healthCheckHandler := rest.NewHealthCheckHandler(logger)
 
@@ -89,9 +102,7 @@ func setupLogger(env string) (*slog.Logger, error) {
 	return logger, nil
 }
 
-func setupAnalyticsRepo(
-	logger *slog.Logger,
-) (repository.AnalyticsRepo, error) {
+func setupClickhouseConn() (driver.Conn, error) {
 	username := os.Getenv(clickhouseUsername)
 	if username == "" {
 		return nil, fmt.Errorf("you did not provide env: %s", clickhouseUsername)
@@ -114,13 +125,25 @@ func setupAnalyticsRepo(
 		return nil, fmt.Errorf("you did not provice env: %s", clickhouseDatabase)
 	}
 
-	analyticsRepo, err := analytics.NewAnalyticsRepoClickhouse(
-		logger,
-		database,
-		username,
-		password,
-		host,
-		port,
-	)
-	return analyticsRepo, err
+	addr := fmt.Sprintf("%s:%s", host, port)
+
+	conn, err := clickhouse.Open(&clickhouse.Options{
+		Protocol: clickhouse.Native,
+		Addr:     []string{addr},
+		Auth: clickhouse.Auth{
+			Database: database,
+			Username: username,
+			Password: password,
+		},
+		Debug:           true,
+		DialTimeout:     30 * time.Second,
+		MaxOpenConns:    10,
+		MaxIdleConns:    5,
+		ConnMaxLifetime: time.Hour,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	return conn, err
 }

@@ -8,11 +8,11 @@ import (
 type TopURLConverter struct {
 }
 
-func NewTopURLConverter() *TopURLConverter {
-	return &TopURLConverter{}
+func NewTopURLConverter() TopURLConverter {
+	return TopURLConverter{}
 }
 
-func (c *TopURLConverter) ConvertDomainToDto(d domain.TopURLData) dto.TopURLData {
+func (c *TopURLConverter) MapDomainToDto(d domain.TopURLData) dto.TopURLData {
 	return dto.TopURLData{
 		LongURL:     d.LongURL,
 		ShortURL:    d.ShortURL,
@@ -21,11 +21,11 @@ func (c *TopURLConverter) ConvertDomainToDto(d domain.TopURLData) dto.TopURLData
 	}
 }
 
-func (c *TopURLConverter) ConvertSliceDomainToDto(d []domain.TopURLData) []dto.TopURLData {
+func (c *TopURLConverter) MapSliceDomainToDto(d []domain.TopURLData) []dto.TopURLData {
 	dtos := make([]dto.TopURLData, len(d))
 
 	for i := 0; i < len(d); i++ {
-		dtos[i] = c.ConvertDomainToDto(d[i])
+		dtos[i] = c.MapDomainToDto(d[i])
 	}
 
 	return dtos
