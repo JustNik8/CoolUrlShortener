@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"strconv"
 	"time"
 
 	"analytics_service/internal/domain"
@@ -53,26 +52,20 @@ func NewAnalyticsRepoClickhouse(
 	}, nil
 }
 
-const getTopUrlsQuery = `select long_url, short_url, follow_count, create_count
-from url_events_counter FINAL
-ORDER BY (follow_count, create_count) DESC
-LIMIT {limit:Int64};`
+const getTopUrlsQuery = "select long_url, short_url, follow_count, create_count from url_events_counter FINAL ORDER BY (follow_count, create_count) DESC LIMIT $1;"
 
 func (r *analyticsRepoClickhouse) GetTopUrls(ctx context.Context, limit int) ([]domain.TopURLData, error) {
-	chCtx := clickhouse.Context(ctx, clickhouse.WithParameters(clickhouse.Parameters{
-		"limit": strconv.Itoa(limit),
-	}))
+	rows, err := r.conn.Query(ctx, getTopUrlsQuery, limit)
+	if err != nil {
+		return nil, err
+	}
 
-	rows, err := r.conn.Query(chCtx, getTopUrlsQuery)
 	defer func() {
 		err := rows.Close()
 		if err != nil {
 			r.logger.Error(err.Error())
 		}
 	}()
-	if err != nil {
-		return nil, err
-	}
 
 	topURLs := make([]domain.TopURLData, 0)
 	for rows.Next() {
