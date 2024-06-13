@@ -1,9 +1,7 @@
-name: Build and Push Backend
+name: Build and Push services to server
 
 on:
   push:
-    paths:
-      - /**
     branches:
       - main
   workflow_dispatch:
