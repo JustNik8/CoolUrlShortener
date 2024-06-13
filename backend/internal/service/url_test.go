@@ -14,7 +14,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	servicemocks "CoolUrlShortener/internal/service/mocks"
 	shortenermocks "CoolUrlShortener/pkg/shortener/mocks"
 )
 
@@ -28,12 +27,12 @@ func TestGetLongURL(t *testing.T) {
 	testShortURL := "short"
 
 	testCases := []struct {
-		name                       string
-		buildURLRepo               func() repository.UrlRepo
-		buildURLCache              func() repository.URLCache
-		buildEventsServiceProducer func() EventsServiceProducer
-		expectedLongURL            string
-		expectedErr                error
+		name                string
+		buildURLRepo        func() repository.UrlRepo
+		buildURLCache       func() repository.URLCache
+		buildEventsProducer func() repository.EventsProducer
+		expectedLongURL     string
+		expectedErr         error
 	}{
 		{
 			name: "Get long url from cache",
@@ -50,8 +49,8 @@ func TestGetLongURL(t *testing.T) {
 
 				return mockCache
 			},
-			buildEventsServiceProducer: func() EventsServiceProducer {
-				mockEventsServiceProducer := servicemocks.NewEventsServiceProducer(t)
+			buildEventsProducer: func() repository.EventsProducer {
+				mockEventsServiceProducer := mocks.NewEventsProducer(t)
 				mockEventsServiceProducer.On("ProduceEvent", mock.Anything).
 					Once()
 
@@ -82,8 +81,8 @@ func TestGetLongURL(t *testing.T) {
 
 				return mockCache
 			},
-			buildEventsServiceProducer: func() EventsServiceProducer {
-				mockEventsServiceProducer := servicemocks.NewEventsServiceProducer(t)
+			buildEventsProducer: func() repository.EventsProducer {
+				mockEventsServiceProducer := mocks.NewEventsProducer(t)
 				mockEventsServiceProducer.On("ProduceEvent", mock.Anything).
 					Once()
 
@@ -110,8 +109,8 @@ func TestGetLongURL(t *testing.T) {
 
 				return mockCache
 			},
-			buildEventsServiceProducer: func() EventsServiceProducer {
-				mockEventsServiceProducer := servicemocks.NewEventsServiceProducer(t)
+			buildEventsProducer: func() repository.EventsProducer {
+				mockEventsServiceProducer := mocks.NewEventsProducer(t)
 
 				return mockEventsServiceProducer
 			},
@@ -139,8 +138,8 @@ func TestGetLongURL(t *testing.T) {
 
 				return mockCache
 			},
-			buildEventsServiceProducer: func() EventsServiceProducer {
-				mockEventsServiceProducer := servicemocks.NewEventsServiceProducer(t)
+			buildEventsProducer: func() repository.EventsProducer {
+				mockEventsServiceProducer := mocks.NewEventsProducer(t)
 				mockEventsServiceProducer.On("ProduceEvent", mock.Anything).
 					Once()
 
@@ -157,7 +156,7 @@ func TestGetLongURL(t *testing.T) {
 				logger,
 				tc.buildURLRepo(),
 				tc.buildURLCache(),
-				tc.buildEventsServiceProducer(),
+				tc.buildEventsProducer(),
 				urlShortener,
 			)
 
@@ -178,13 +177,13 @@ func TestSaveURL(t *testing.T) {
 	unexpectedErr := errors.New("unexpected error")
 
 	testCases := []struct {
-		name                       string
-		buildURLRepo               func() repository.UrlRepo
-		buildURLCache              func() repository.URLCache
-		buildEventsServiceProducer func() EventsServiceProducer
-		buildURLShortener          func() shortener.URLShortener
-		expectedShortURL           string
-		expectedErr                error
+		name                string
+		buildURLRepo        func() repository.UrlRepo
+		buildURLCache       func() repository.URLCache
+		buildEventsProducer func() repository.EventsProducer
+		buildURLShortener   func() shortener.URLShortener
+		expectedShortURL    string
+		expectedErr         error
 	}{
 		{
 			name: "Short url exists. Should return existing short url",
@@ -200,8 +199,8 @@ func TestSaveURL(t *testing.T) {
 
 				return mockCache
 			},
-			buildEventsServiceProducer: func() EventsServiceProducer {
-				mockEventsServiceProducer := servicemocks.NewEventsServiceProducer(t)
+			buildEventsProducer: func() repository.EventsProducer {
+				mockEventsServiceProducer := mocks.NewEventsProducer(t)
 				mockEventsServiceProducer.On("ProduceEvent", mock.Anything).
 					Once()
 
@@ -228,8 +227,8 @@ func TestSaveURL(t *testing.T) {
 
 				return mockCache
 			},
-			buildEventsServiceProducer: func() EventsServiceProducer {
-				mockEventsServiceProducer := servicemocks.NewEventsServiceProducer(t)
+			buildEventsProducer: func() repository.EventsProducer {
+				mockEventsServiceProducer := mocks.NewEventsProducer(t)
 
 				return mockEventsServiceProducer
 			},
@@ -259,8 +258,8 @@ func TestSaveURL(t *testing.T) {
 
 				return mockCache
 			},
-			buildEventsServiceProducer: func() EventsServiceProducer {
-				mockEventsServiceProducer := servicemocks.NewEventsServiceProducer(t)
+			buildEventsProducer: func() repository.EventsProducer {
+				mockEventsServiceProducer := mocks.NewEventsProducer(t)
 				mockEventsServiceProducer.On("ProduceEvent", mock.Anything).
 					Once()
 
@@ -293,8 +292,8 @@ func TestSaveURL(t *testing.T) {
 
 				return mockCache
 			},
-			buildEventsServiceProducer: func() EventsServiceProducer {
-				mockEventsServiceProducer := servicemocks.NewEventsServiceProducer(t)
+			buildEventsProducer: func() repository.EventsProducer {
+				mockEventsServiceProducer := mocks.NewEventsProducer(t)
 
 				return mockEventsServiceProducer
 			},
@@ -327,8 +326,8 @@ func TestSaveURL(t *testing.T) {
 
 				return mockCache
 			},
-			buildEventsServiceProducer: func() EventsServiceProducer {
-				mockEventsServiceProducer := servicemocks.NewEventsServiceProducer(t)
+			buildEventsProducer: func() repository.EventsProducer {
+				mockEventsServiceProducer := mocks.NewEventsProducer(t)
 				mockEventsServiceProducer.On("ProduceEvent", mock.Anything).
 					Once()
 
@@ -352,7 +351,7 @@ func TestSaveURL(t *testing.T) {
 				logger,
 				tc.buildURLRepo(),
 				tc.buildURLCache(),
-				tc.buildEventsServiceProducer(),
+				tc.buildEventsProducer(),
 				tc.buildURLShortener(),
 			)
 
