@@ -1,8 +1,10 @@
 package repository
 
-import "CoolUrlShortener/internal/domain"
+import (
+	"CoolUrlShortener/internal/repository/models"
+)
 
-//go:generate go run github.com/vektra/mockery/v2@v2.42.1 --name EventsWriter
-type EventsWriter interface {
-	Insert(events []domain.URLEvent) error
+//go:generate go run github.com/vektra/mockery/v2@v2.42.1 --name EventsServiceProducer
+type EventsProducer interface {
+	ProduceEvent(event models.URLEvent)
 }

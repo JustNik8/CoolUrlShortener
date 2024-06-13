@@ -5,5 +5,8 @@ CREATE TABLE IF NOT EXISTS url_events
     event_time TIMESTAMP,
     event_type Enum8('create' = 1, 'follow' = 2)
 )
-ENGINE = MergeTree
-ORDER BY (event_time, short_url);
+    ENGINE = Kafka SETTINGS
+        kafka_broker_list = 'kafka1:9092',
+        kafka_topic_list = 'events',
+        kafka_group_name = 'group1',
+        kafka_format = 'JSONEachRow';
