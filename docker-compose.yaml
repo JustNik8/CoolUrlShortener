@@ -18,7 +18,7 @@ services:
       retries: 10
 
   url_shortener_service:
-    build: ./backend
+    build: ./url_shortener_service
     ports:
       - "8000:8000"
     environment:
