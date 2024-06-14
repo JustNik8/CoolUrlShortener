@@ -3,16 +3,22 @@ package app
 import (
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"analytics_service/internal/converter"
 	"analytics_service/internal/repository/clickhouserepo"
 	"analytics_service/internal/service"
+	analytics_grpc "analytics_service/internal/transport/grpc"
 	"analytics_service/internal/transport/rest"
+	analytics "analytics_service/pkg/proto"
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
+	"google.golang.org/grpc"
 )
 
 const (
@@ -27,7 +33,9 @@ const (
 	clickhousePort     = "CLICKHOUSE_PORT"
 	clickhouseDatabase = "CLICKHOUSE_DATABASE"
 
-	serverPort = "8001"
+	httpServerPort    = "8001"
+	grpcServerPort    = "8101"
+	grpcServerNetwork = "tcp"
 )
 
 func Run() {
@@ -68,18 +76,51 @@ func Run() {
 	mux.HandleFunc("GET /api/top_urls", analyticsHandler.GetTopURLs)
 	mux.HandleFunc("GET /api/healthcheck", healthCheckHandler.HealthCheck)
 
-	addr := fmt.Sprintf(":%s", serverPort)
+	go func() {
+		addr := fmt.Sprintf(":%s", httpServerPort)
 
-	server := http.Server{
-		Addr:    addr,
-		Handler: mux,
-	}
+		server := http.Server{
+			Addr:    addr,
+			Handler: mux,
+		}
 
-	logger.Info(fmt.Sprintf("Run server on %s", addr))
-	err = server.ListenAndServe()
-	if err != nil {
-		logger.Info(err.Error())
-	}
+		logger.Info(fmt.Sprintf("Run server on %s", addr))
+		err = server.ListenAndServe()
+		if err != nil {
+			logger.Info(err.Error())
+		}
+	}()
+
+	go func() {
+		s := grpc.NewServer()
+		analyticsServer := analytics_grpc.NewAnalyticsServer(
+			logger,
+			analyticsService,
+			paginationService,
+			topURLConverter,
+			paginationConverter,
+		)
+
+		analytics.RegisterAnalyticsServer(s, analyticsServer)
+		port := fmt.Sprintf(":%s", grpcServerPort)
+		listener, err := net.Listen(grpcServerNetwork, port)
+		if err != nil {
+			panic(err)
+		}
+
+		err = s.Serve(listener)
+		if err != nil {
+			logger.Info(err.Error())
+			return
+		}
+
+	}()
+
+	// Graceful shutdown
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
+
+	<-stop
 
 }
 

@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package analytics;
+
+option go_package = "./;analytics";
+
+service Analytics {
+  rpc GetTopUrls(TopUrlsRequest) returns (TopUrlsResponse) {}
+}
+
+message TopUrlsRequest {
+  int64 page = 1;
+  int64 limit = 2;
+}
+
+message Pagination {
+  int64 next = 1;
+  int64 previous = 2;
+  int64 recordPerPage = 3;
+  int64 currentPage = 4;
+  int64 totalPage = 5;
+}
+
+message TopUrlData {
+  string longUrl = 1;
+  string shortUrl = 2;
+  int64 followCount = 3;
+  int64 createCount = 4;
+}
+
+message TopUrlsResponse {
+  repeated TopUrlData topUrlData = 1;
+  Pagination pagination = 2;
+}
+
