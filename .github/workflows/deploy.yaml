@@ -20,7 +20,7 @@ jobs:
       FRONTEND_NAME: ${{ secrets.DOCKER_FRONTED_NAME }}
       URL_SHORTENER_SERVICE_NAME: ${{ secrets.DOCKER_URL_SHORTENER_SERVICE_NAME }}
       ANALYTICS_SERVICE_NAME: ${{ secrets.DOCKER_ANALYTICS_SERVICE_NAME }}
-      API_GATEWAY_NAME: ${{ DOCKER_API_GATEWAY_NAME }}
+      API_GATEWAY_NAME: ${{ secrets.DOCKER_API_GATEWAY_NAME }}
     steps:
       - uses: actions/checkout@v2
       - name: Build frontend image
