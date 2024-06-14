@@ -37,11 +37,6 @@ services:
       SERVER_DOMAIN: "localhost:8000"
     networks:
       - service_network
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8000/api/healthcheck" ]
-      interval: 10s
-      timeout: 10s
-      retries: 10
     depends_on:
       postgres:
         condition: service_healthy
@@ -66,15 +61,23 @@ services:
       CLICKHOUSE_DATABASE: "default"
     networks:
       - service_network
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8001/api/healthcheck" ]
-      start_period: 10s
-      interval: 10s
-      timeout: 10s
-      retries: 10
     depends_on:
       clickhouse:
         condition: service_healthy
+
+  api_gateway:
+    build: ./api_gateway
+    ports:
+      - "8200:8200"
+    environment:
+      ENV: "local"
+    networks:
+      - service_network
+    depends_on:
+      url_shortener_service:
+        condition: service_started
+      analytics_service:
+        condition: service_started
 
   redis:
     image: bitnami/redis:latest

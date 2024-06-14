@@ -66,14 +66,10 @@ func Run() {
 		panic(err)
 	}
 	analyticsService := service.NewAnalyticsService(analyticsRepo)
-	analyticsHandler := rest.NewAnalyticsHandler(
-		logger, analyticsService, paginationService, topURLConverter, paginationConverter,
-	)
 
 	healthCheckHandler := rest.NewHealthCheckHandler(logger)
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /api/top_urls", analyticsHandler.GetTopURLs)
 	mux.HandleFunc("GET /api/healthcheck", healthCheckHandler.HealthCheck)
 
 	go func() {
