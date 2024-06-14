@@ -37,6 +37,7 @@ func Run() {
 
 	target := fmt.Sprintf("%s:%s", "analytics_service", "8101")
 	transportOpt := grpc.WithTransportCredentials(insecure.NewCredentials())
+
 	conn, err := grpc.NewClient(target, transportOpt)
 	if err != nil {
 		panic(err)
