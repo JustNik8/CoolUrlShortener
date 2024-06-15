@@ -4,18 +4,24 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"CoolUrlShortener/internal/repository/events"
 	"CoolUrlShortener/internal/repository/postgresql"
 	"CoolUrlShortener/internal/repository/rediscache"
 	"CoolUrlShortener/internal/service"
+	url_grpc "CoolUrlShortener/internal/transport/grpc"
 	"CoolUrlShortener/internal/transport/rest"
+	url "CoolUrlShortener/pkg/proto"
 	"CoolUrlShortener/pkg/shortener"
 	"github.com/go-playground/validator/v10"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
+	"google.golang.org/grpc"
 
 	httpSwagger "github.com/swaggo/http-swagger"
 )
@@ -37,7 +43,9 @@ const (
 
 	serverDomainKey = "SERVER_DOMAIN"
 
-	serverPort = "8000"
+	serverPort        = "8000"
+	grpcServerPort    = "8001"
+	grpcServerNetwork = "tcp"
 )
 
 func Run() {
@@ -96,24 +104,53 @@ func Run() {
 
 	healthCheckHandler := rest.NewHealthCheckHandler(logger)
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/api/docs/", httpSwagger.WrapHandler)
-	mux.HandleFunc("GET /api/healthcheck", healthCheckHandler.HealthCheck)
-	mux.HandleFunc("POST /api/save_url", urlHandler.SaveURL)
-	mux.HandleFunc("OPTIONS /api/save_url", urlHandler.SaveURLOptions)
-	mux.HandleFunc("GET /{short_url}", urlHandler.FollowUrl)
+	go func() {
+		mux := http.NewServeMux()
+		mux.HandleFunc("/api/docs/", httpSwagger.WrapHandler)
+		mux.HandleFunc("GET /api/healthcheck", healthCheckHandler.HealthCheck)
+		mux.HandleFunc("POST /api/save_url", urlHandler.SaveURL)
+		mux.HandleFunc("OPTIONS /api/save_url", urlHandler.SaveURLOptions)
+		mux.HandleFunc("GET /{short_url}", urlHandler.FollowUrl)
 
-	addr := fmt.Sprintf(":%s", serverPort)
-	server := http.Server{
-		Addr:    addr,
-		Handler: mux,
-	}
+		addr := fmt.Sprintf(":%s", serverPort)
+		server := http.Server{
+			Addr:    addr,
+			Handler: mux,
+		}
 
-	logger.Info(fmt.Sprintf("Run server on %s", addr))
-	err = server.ListenAndServe()
-	if err != nil {
-		logger.Info(err.Error())
-	}
+		logger.Info(fmt.Sprintf("Run server on %s", addr))
+		err = server.ListenAndServe()
+		if err != nil {
+			logger.Info(err.Error())
+		}
+	}()
+
+	go func() {
+		s := grpc.NewServer()
+		urlServer := url_grpc.NewUrlServer(
+			logger,
+			urlService,
+		)
+
+		url.RegisterUrlServer(s, urlServer)
+		port := fmt.Sprintf(":%s", grpcServerPort)
+		listener, err := net.Listen(grpcServerNetwork, port)
+		if err != nil {
+			panic(err)
+		}
+
+		err = s.Serve(listener)
+		if err != nil {
+			logger.Info(err.Error())
+			return
+		}
+	}()
+
+	// Graceful shutdown
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
+
+	<-stop
 }
 
 func setupConnString() (string, error) {

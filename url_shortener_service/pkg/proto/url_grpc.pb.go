@@ -23,6 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type UrlClient interface {
 	ShortenUrl(ctx context.Context, in *LongUrlRequest, opts ...grpc.CallOption) (*UrlDataResponse, error)
+	FollowUrl(ctx context.Context, in *ShortUrlRequest, opts ...grpc.CallOption) (*LongUrlResponse, error)
 }
 
 type urlClient struct {
@@ -42,11 +43,21 @@ func (c *urlClient) ShortenUrl(ctx context.Context, in *LongUrlRequest, opts ...
 	return out, nil
 }
 
+func (c *urlClient) FollowUrl(ctx context.Context, in *ShortUrlRequest, opts ...grpc.CallOption) (*LongUrlResponse, error) {
+	out := new(LongUrlResponse)
+	err := c.cc.Invoke(ctx, "/url.Url/FollowUrl", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UrlServer is the server API for Url service.
 // All implementations must embed UnimplementedUrlServer
 // for forward compatibility
 type UrlServer interface {
 	ShortenUrl(context.Context, *LongUrlRequest) (*UrlDataResponse, error)
+	FollowUrl(context.Context, *ShortUrlRequest) (*LongUrlResponse, error)
 	mustEmbedUnimplementedUrlServer()
 }
 
@@ -56,6 +67,9 @@ type UnimplementedUrlServer struct {
 
 func (UnimplementedUrlServer) ShortenUrl(context.Context, *LongUrlRequest) (*UrlDataResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ShortenUrl not implemented")
+}
+func (UnimplementedUrlServer) FollowUrl(context.Context, *ShortUrlRequest) (*LongUrlResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FollowUrl not implemented")
 }
 func (UnimplementedUrlServer) mustEmbedUnimplementedUrlServer() {}
 
@@ -88,6 +102,24 @@ func _Url_ShortenUrl_Handler(srv interface{}, ctx context.Context, dec func(inte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Url_FollowUrl_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ShortUrlRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UrlServer).FollowUrl(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/url.Url/FollowUrl",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UrlServer).FollowUrl(ctx, req.(*ShortUrlRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Url_ServiceDesc is the grpc.ServiceDesc for Url service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -98,6 +130,10 @@ var Url_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ShortenUrl",
 			Handler:    _Url_ShortenUrl_Handler,
+		},
+		{
+			MethodName: "FollowUrl",
+			Handler:    _Url_FollowUrl_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

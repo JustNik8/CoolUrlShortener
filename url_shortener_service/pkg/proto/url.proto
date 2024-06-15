@@ -6,6 +6,7 @@ option go_package = "./;url";
 
 service Url {
   rpc ShortenUrl(LongUrlRequest) returns (UrlDataResponse) {}
+  rpc FollowUrl(ShortUrlRequest) returns (LongUrlResponse) {}
 }
 
 message LongUrlRequest {
@@ -15,4 +16,12 @@ message LongUrlRequest {
 message UrlDataResponse {
   string longUrl = 1;
   string shortUrl = 2;
+}
+
+message ShortUrlRequest {
+  string shortUrl = 1;
+}
+
+message LongUrlResponse {
+  string longUrl = 1;
 }
