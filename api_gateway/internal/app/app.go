@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"api_gateway/internal/config"
 	"api_gateway/internal/converter"
 	"api_gateway/internal/transport/rest"
 	"api_gateway/pkg/proto/analytics"
@@ -19,17 +20,16 @@ const (
 	envLocal = "local"
 	envProd  = "prod"
 
-	envKey = "ENV"
+	httpServerPort = "8000"
 )
 
 func Run() {
-	env := os.Getenv(envKey)
-	if env == "" {
-		msg := fmt.Sprintf("You did not provide env: %s", envKey)
-		panic(msg)
+	cfg, err := config.ParseConfig()
+	if err != nil {
+		panic(err)
 	}
 
-	logger, err := setupLogger(env)
+	logger, err := setupLogger(cfg.Env)
 	if err != nil {
 		panic(err)
 	}
@@ -37,16 +37,7 @@ func Run() {
 	topUrlConverter := converter.NewTopURLConverter()
 	paginationConverter := converter.NewPaginationConverter()
 
-	analyticsTarget := fmt.Sprintf("%s:%s", "analytics_service", "8102")
-	analyticsTransportOpt := grpc.WithTransportCredentials(insecure.NewCredentials())
-
-	analyticsConn, err := grpc.NewClient(analyticsTarget, analyticsTransportOpt)
-	if err != nil {
-		panic(err)
-	}
-	analyticsClient := analytics.NewAnalyticsClient(analyticsConn)
-
-	urlTarget := fmt.Sprintf("%s:%s", "url_shortener_service", "8101")
+	urlTarget := fmt.Sprintf("%s:%s", cfg.UrlServiceConfig.Host, cfg.UrlServiceConfig.Port)
 	urlTransportOpr := grpc.WithTransportCredentials(insecure.NewCredentials())
 
 	urlConn, err := grpc.NewClient(urlTarget, urlTransportOpr)
@@ -55,8 +46,18 @@ func Run() {
 	}
 	urlClient := url.NewUrlClient(urlConn)
 
+	analyticsTarget := fmt.Sprintf("%s:%s", cfg.AnalyticsServiceConfig.Host, cfg.AnalyticsServiceConfig.Port)
+	analyticsTransportOpt := grpc.WithTransportCredentials(insecure.NewCredentials())
+
+	analyticsConn, err := grpc.NewClient(analyticsTarget, analyticsTransportOpt)
+	if err != nil {
+		panic(err)
+	}
+	analyticsClient := analytics.NewAnalyticsClient(analyticsConn)
+
+	urlHandler := rest.NewURLHandler(logger, urlClient, validator.New(), cfg.ServerDomain, httpServerPort)
+
 	analyticsHandler := rest.NewAnalyticsHandler(logger, analyticsClient, topUrlConverter, paginationConverter)
-	urlHandler := rest.NewURLHandler(logger, urlClient, validator.New(), "localhost:8000")
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/top_urls", analyticsHandler.GetTopURLs)
@@ -64,7 +65,7 @@ func Run() {
 	mux.HandleFunc("OPTIONS /api/save_url", urlHandler.SaveURLOptions)
 	mux.HandleFunc("GET /{short_url}", urlHandler.FollowUrl)
 
-	addr := fmt.Sprintf(":%s", "8000")
+	addr := fmt.Sprintf(":%s", httpServerPort)
 	server := http.Server{
 		Addr:    addr,
 		Handler: mux,

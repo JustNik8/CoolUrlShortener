@@ -25,6 +25,7 @@ type URLHandler struct {
 	urlGrpcClient url.UrlClient
 	validate      *validator.Validate
 	serverDomain  string
+	serverPort    string
 }
 
 func NewURLHandler(
@@ -32,12 +33,14 @@ func NewURLHandler(
 	urlGrpcClient url.UrlClient,
 	validate *validator.Validate,
 	serverDomain string,
+	serverPort string,
 ) *URLHandler {
 	return &URLHandler{
 		logger:        logger,
 		urlGrpcClient: urlGrpcClient,
 		validate:      validate,
 		serverDomain:  serverDomain,
+		serverPort:    serverPort,
 	}
 }
 
@@ -121,7 +124,7 @@ func (h *URLHandler) SaveURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	shortURLRaw, err := h.urlGrpcClient.ShortenUrl(context.Background(), &url.LongUrlRequest{
+	shortURLResp, err := h.urlGrpcClient.ShortenUrl(context.Background(), &url.LongUrlRequest{
 		LongUrl: longURLData.LongURL,
 	})
 	if err != nil {
@@ -130,7 +133,7 @@ func (h *URLHandler) SaveURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	shortURL := fmt.Sprintf("%s://%s/%s", serverProtocol, h.serverDomain, shortURLRaw.ShortUrl)
+	shortURL := fmt.Sprintf("%s://%s:%s/%s", serverProtocol, h.serverDomain, h.serverPort, shortURLResp.ShortUrl)
 	urlData := dto.URlData{
 		LongURL:  longURLData.LongURL,
 		ShortURL: shortURL,

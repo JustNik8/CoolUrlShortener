@@ -68,6 +68,14 @@ services:
       - "8000:8000"
     environment:
       ENV: "local"
+
+      URL_SERVICE_HOST: "url_shortener_service"
+      URL_SERVICE_PORT: "8101"
+
+      ANALYTICS_SERVICE_HOST: "analytics_service"
+      ANALYTICS_SERVICE_PORT: "8102"
+
+      SERVER_DOMAIN: "localhost"
     networks:
       - service_network
     depends_on:
