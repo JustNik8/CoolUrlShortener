@@ -32,7 +32,8 @@ services:
       REDIS_PORT: "6379"
       REDIS_PASSWORD: "redis"
 
-      SERVER_DOMAIN: "localhost:8000"
+      KAFKA_ADDRS: "kafka1:9092"
+
     networks:
       - service_network
     depends_on:

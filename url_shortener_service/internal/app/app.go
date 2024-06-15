@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"CoolUrlShortener/internal/config"
 	"CoolUrlShortener/internal/repository/events"
 	"CoolUrlShortener/internal/repository/postgresql"
 	"CoolUrlShortener/internal/repository/rediscache"
@@ -27,19 +28,6 @@ const (
 	envLocal = "local"
 	envProd  = "prod"
 
-	envKey           = "ENV"
-	databaseUsername = "DATABASE_USERNAME"
-	databasePassword = "DATABASE_PASSWORD"
-	databaseHost     = "DATABASE_HOST"
-	databasePort     = "DATABASE_PORT"
-	databaseName     = "DATABASE_NAME"
-
-	redisHost     = "REDIS_HOST"
-	redisPort     = "REDIS_PORT"
-	redisPassword = "REDIS_PASSWORD"
-
-	serverDomainKey = "SERVER_DOMAIN"
-
 	httpServerPort    = "8001"
 	grpcServerPort    = "8101"
 	grpcServerNetwork = "tcp"
@@ -53,39 +41,36 @@ func Run() {
 		close(doneCh)
 	}()
 
-	serverDomain := os.Getenv(serverDomainKey)
-	if serverDomain == "" {
-		msg := fmt.Sprintf("You did not provide env: %s", serverDomainKey)
-		panic(msg)
-	}
-
-	env := os.Getenv(envKey)
-	if env == "" {
-		msg := fmt.Sprintf("You did not provide env: %s", envKey)
-		panic(msg)
-	}
-
-	logger, err := setupLogger(env)
+	cfg, err := config.ParseConfig()
 	if err != nil {
 		panic(err)
 	}
 
-	connString, err := setupConnString()
+	logger, err := setupLogger(cfg.Env)
 	if err != nil {
 		panic(err)
 	}
+
+	connString := fmt.Sprintf("postgres://%s:%s@%s:%s/%s",
+		cfg.DatabaseConfig.Username,
+		cfg.DatabaseConfig.Password,
+		cfg.DatabaseConfig.Host,
+		cfg.DatabaseConfig.Port,
+		cfg.DatabaseConfig.Name,
+	)
+
 	dbPool, err := pgxpool.New(context.Background(), connString)
 	if err != nil {
 		panic(err)
 	}
 	defer dbPool.Close()
 
-	eventsServiceProducer, err := events.NewKafkaEventProducer(logger, []string{"kafka1:9092"}, nil, doneCh)
+	eventsServiceProducer, err := events.NewKafkaEventProducer(logger, cfg.KafkaConfig.Addrs, nil, doneCh)
 	if err != nil {
 		panic(err)
 	}
 
-	redisClient, err := setupRedisClient()
+	redisClient, err := setupRedisClient(cfg.RedisConfig)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -143,36 +128,6 @@ func Run() {
 	<-stop
 }
 
-func setupConnString() (string, error) {
-	username := os.Getenv(databaseUsername)
-	if username == "" {
-		return "", fmt.Errorf("you did not provide env: %s", databaseUsername)
-	}
-
-	password := os.Getenv(databasePassword)
-	if password == "" {
-		return "", fmt.Errorf("you did not provide env: %s", databasePassword)
-	}
-
-	host := os.Getenv(databaseHost)
-	if host == "" {
-		return "", fmt.Errorf("you did not provide env: %s", databaseHost)
-	}
-
-	port := os.Getenv(databasePort)
-	if port == "" {
-		return "", fmt.Errorf("you did not provide env: %s", databasePort)
-	}
-
-	dbName := os.Getenv(databaseName)
-	if dbName == "" {
-		return "", fmt.Errorf("you did not provide env: %s", databaseName)
-	}
-
-	connString := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", username, password, host, port, dbName)
-	return connString, nil
-}
-
 func setupLogger(env string) (*slog.Logger, error) {
 	var logger *slog.Logger
 
@@ -192,26 +147,12 @@ func setupLogger(env string) (*slog.Logger, error) {
 	return logger, nil
 }
 
-func setupRedisClient() (*redis.Client, error) {
-	host := os.Getenv(redisHost)
-	if host == "" {
-		return nil, fmt.Errorf("you did not provide env: %s", redisHost)
-	}
+func setupRedisClient(redisCfg config.RedisConfig) (*redis.Client, error) {
 
-	port := os.Getenv(redisPort)
-	if port == "" {
-		return nil, fmt.Errorf("you did not provide env: %s", redisPort)
-	}
-
-	password := os.Getenv(redisPassword)
-	if password == "" {
-		return nil, fmt.Errorf("you did not provide env: %s", redisPassword)
-	}
-
-	addr := fmt.Sprintf("%s:%s", host, port)
+	addr := fmt.Sprintf("%s:%s", redisCfg.Host, redisCfg.Port)
 	redisClient := redis.NewClient(&redis.Options{
 		Addr:     addr,
-		Password: password,
+		Password: redisCfg.Password,
 		DB:       0,
 	})
 
