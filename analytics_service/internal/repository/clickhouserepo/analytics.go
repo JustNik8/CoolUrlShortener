@@ -54,7 +54,9 @@ func (r *analyticsRepoClickhouse) GetTopUrls(
 	ctx context.Context,
 	paginationParams domain.PaginationParams,
 ) ([]domain.TopURLData, error) {
-	rows, err := r.conn.Query(ctx, getTopUrlsQuery, paginationParams.Limit, paginationParams.Page)
+	offset := paginationParams.Limit * (paginationParams.Page - 1)
+
+	rows, err := r.conn.Query(ctx, getTopUrlsQuery, paginationParams.Limit, offset)
 	if err != nil {
 		return nil, err
 	}

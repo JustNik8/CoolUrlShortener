@@ -3,7 +3,6 @@ package rest
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -18,6 +17,8 @@ import (
 const (
 	limitQueryParam = "limit"
 	pageQueryParam  = "page"
+	defaultPage     = 1
+	defaultLimit    = 10
 )
 
 type AnalyticsHandler struct {
@@ -59,27 +60,12 @@ func (h *AnalyticsHandler) GetTopURLs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Access-Control-Allow-Origin", "*")
 	w.Header().Add("Access-Control-Allow-Credentials", "true")
 
-	pageRaw := r.URL.Query().Get(pageQueryParam)
-	if pageRaw == "" {
-		msg := fmt.Sprintf("Query param '%s' is empty", pageQueryParam)
-		response.BadRequest(w, msg)
-		return
-	}
-
-	page, err := strconv.Atoi(pageRaw)
+	page, err := h.parseQueryParam(r, pageQueryParam, defaultPage)
 	if err != nil {
 		response.BadRequest(w, err.Error())
 		return
 	}
-
-	limitRaw := r.URL.Query().Get(limitQueryParam)
-	if limitRaw == "" {
-		msg := fmt.Sprintf("Query param '%s' is empty", limitQueryParam)
-		response.BadRequest(w, msg)
-		return
-	}
-
-	limit, err := strconv.Atoi(limitRaw)
+	limit, err := h.parseQueryParam(r, limitQueryParam, defaultLimit)
 	if err != nil {
 		response.BadRequest(w, err.Error())
 		return
@@ -115,4 +101,23 @@ func (h *AnalyticsHandler) GetTopURLs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.WriteResponse(w, http.StatusOK, respBytes)
+}
+
+func (h *AnalyticsHandler) parseQueryParam(r *http.Request, key string, defaultValue int) (int, error) {
+	queryParam := r.URL.Query().Get(key)
+
+	if queryParam == "" {
+		return defaultValue, nil
+	}
+
+	param, err := strconv.Atoi(queryParam)
+	if err != nil {
+		return 0, err
+	}
+
+	if param == 0 {
+		return defaultValue, nil
+	}
+	return param, nil
+
 }
