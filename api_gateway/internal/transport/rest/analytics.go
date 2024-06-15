@@ -41,6 +41,20 @@ func NewAnalyticsHandler(
 	}
 }
 
+// GetTopURLs docs
+//
+//	@Summary		Получение списка популярных url
+//	@Tags			url
+//	@Description	Принимает page и limit. Возвращает список популярных url. Поддерживает пагинацию
+//	@ID				get-top-urls
+//	@Accept			json
+//	@Produce		json
+//	@Param			page	query		int	true	"Страница"
+//	@Param			limit	query		int	true	"Максимальное количество url на странице"
+//	@Success		200		{object}	dto.TopURLDataResponse
+//	@Failure		400		{object}	response.Body
+//	@Failure		500		{object}	response.Body
+//	@Router			/api/top_urls [get]
 func (h *AnalyticsHandler) GetTopURLs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Access-Control-Allow-Origin", "*")
 	w.Header().Add("Access-Control-Allow-Credentials", "true")

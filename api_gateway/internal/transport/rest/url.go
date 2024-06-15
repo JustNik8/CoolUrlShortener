@@ -148,6 +148,14 @@ func (h *URLHandler) SaveURL(w http.ResponseWriter, r *http.Request) {
 	response.WriteResponse(w, http.StatusOK, urlBody)
 }
 
+// SaveURLOptions docs
+//
+//	@Summary		Получение описания параметров соединения с сервером
+//	@Tags			options
+//	@Description	Возвращает информацию по хедерам Access-Control-Request-Method, Access-Control-Request-Headers, Origin
+//	@ID				options-save-url
+//	@Success		200	""
+//	@Router			/api/save_url [options]
 func (h *URLHandler) SaveURLOptions(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Access-Control-Request-Method", "POST")
 	w.Header().Add("Access-Control-Request-Headers", "x-requested-with")

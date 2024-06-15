@@ -15,21 +15,6 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/healthcheck": {
-            "get": {
-                "description": "Возвращает код 200, когда сервис работоспособен",
-                "tags": [
-                    "healthcheck"
-                ],
-                "summary": "Проверка работоспособности сервиса",
-                "operationId": "healthcheck",
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    }
-                }
-            }
-        },
         "/api/save_url": {
             "post": {
                 "description": "Принимает исходную ссылку, создает короткую ссылку и возвращает короткую ссылку",
@@ -60,6 +45,71 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/dto.URlData"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    }
+                }
+            },
+            "options": {
+                "description": "Возвращает информацию по хедерам Access-Control-Request-Method, Access-Control-Request-Headers, Origin",
+                "tags": [
+                    "options"
+                ],
+                "summary": "Получение описания параметров соединения с сервером",
+                "operationId": "options-save-url",
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/top_urls": {
+            "get": {
+                "description": "Принимает page и limit. Возвращает список популярных url. Поддерживает пагинацию",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "url"
+                ],
+                "summary": "Получение списка популярных url",
+                "operationId": "get-top-urls",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Страница",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Максимальное количество url на странице",
+                        "name": "limit",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.TopURLDataResponse"
                         }
                     },
                     "400": {
@@ -132,6 +182,57 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.Pagination": {
+            "type": "object",
+            "properties": {
+                "current_page": {
+                    "type": "integer"
+                },
+                "next": {
+                    "type": "integer"
+                },
+                "previous": {
+                    "type": "integer"
+                },
+                "record_per_page": {
+                    "type": "integer"
+                },
+                "total_page": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.TopURLData": {
+            "type": "object",
+            "properties": {
+                "create_count": {
+                    "type": "integer"
+                },
+                "follow_count": {
+                    "type": "integer"
+                },
+                "long_url": {
+                    "type": "string"
+                },
+                "short_url": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.TopURLDataResponse": {
+            "type": "object",
+            "properties": {
+                "pagination": {
+                    "$ref": "#/definitions/dto.Pagination"
+                },
+                "top_url_data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.TopURLData"
+                    }
+                }
+            }
+        },
         "dto.URlData": {
             "type": "object",
             "properties": {
@@ -158,7 +259,7 @@ const docTemplate = `{
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
 	Host:             "",
-	BasePath:         "/",
+	BasePath:         "",
 	Schemes:          []string{},
 	Title:            "CoolURLShortener API",
 	Description:      "API Server for shorten urls",
