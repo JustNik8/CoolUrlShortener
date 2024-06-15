@@ -2,7 +2,8 @@ body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-start;
+    margin-left: 10%;
     justify-content: center;
 }
 
@@ -44,4 +45,17 @@ a.shorten_btn:hover {
 /* при нажатии */
 a.shorten_btn:active {
     background: rgb(152, 15, 0);
+}
+
+td {
+    text-align: center;
+}
+
+th, td {
+    padding: 12px;
+}
+
+table, th, td {
+    border: 1px solid black;
+    border-collapse: collapse;
 }
