@@ -12,6 +12,7 @@ import (
 	"api_gateway/pkg/proto/analytics"
 	"api_gateway/pkg/proto/url"
 	"github.com/go-playground/validator/v10"
+	httpSwagger "github.com/swaggo/http-swagger"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -64,6 +65,7 @@ func Run() {
 	mux.HandleFunc("POST /api/save_url", urlHandler.SaveURL)
 	mux.HandleFunc("OPTIONS /api/save_url", urlHandler.SaveURLOptions)
 	mux.HandleFunc("GET /{short_url}", urlHandler.FollowUrl)
+	mux.HandleFunc("GET /api/docs/", httpSwagger.WrapHandler)
 
 	addr := fmt.Sprintf(":%s", httpServerPort)
 	server := http.Server{

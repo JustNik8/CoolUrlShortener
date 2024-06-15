@@ -1,4 +1,3 @@
-basePath: /
 definitions:
   dto.LongURLData:
     properties:
@@ -6,6 +5,39 @@ definitions:
         type: string
     required:
     - long_url
+    type: object
+  dto.Pagination:
+    properties:
+      current_page:
+        type: integer
+      next:
+        type: integer
+      previous:
+        type: integer
+      record_per_page:
+        type: integer
+      total_page:
+        type: integer
+    type: object
+  dto.TopURLData:
+    properties:
+      create_count:
+        type: integer
+      follow_count:
+        type: integer
+      long_url:
+        type: string
+      short_url:
+        type: string
+    type: object
+  dto.TopURLDataResponse:
+    properties:
+      pagination:
+        $ref: '#/definitions/dto.Pagination'
+      top_url_data:
+        items:
+          $ref: '#/definitions/dto.TopURLData'
+        type: array
     type: object
   dto.URlData:
     properties:
@@ -54,17 +86,17 @@ paths:
       summary: Редирект с короткой ссылки на исходную ссылку
       tags:
       - url
-  /api/healthcheck:
-    get:
-      description: Возвращает код 200, когда сервис работоспособен
-      operationId: healthcheck
+  /api/save_url:
+    options:
+      description: Возвращает информацию по хедерам Access-Control-Request-Method,
+        Access-Control-Request-Headers, Origin
+      operationId: options-save-url
       responses:
         "200":
-          description: OK
-      summary: Проверка работоспособности сервиса
+          description: ""
+      summary: Получение описания параметров соединения с сервером
       tags:
-      - healthcheck
-  /api/save_url:
+      - options
     post:
       consumes:
       - application/json
@@ -94,6 +126,42 @@ paths:
           schema:
             $ref: '#/definitions/response.Body'
       summary: Создание и сохранение короткой ссылки по исходной ссылки
+      tags:
+      - url
+  /api/top_urls:
+    get:
+      consumes:
+      - application/json
+      description: Принимает page и limit. Возвращает список популярных url. Поддерживает
+        пагинацию
+      operationId: get-top-urls
+      parameters:
+      - description: Страница
+        in: query
+        name: page
+        required: true
+        type: integer
+      - description: Максимальное количество url на странице
+        in: query
+        name: limit
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.TopURLDataResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Body'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Body'
+      summary: Получение списка популярных url
       tags:
       - url
 swagger: "2.0"
