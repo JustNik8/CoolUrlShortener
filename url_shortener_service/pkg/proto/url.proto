@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package url;
+
+option go_package = "./;url";
+
+service Url {
+  rpc ShortenUrl(LongUrlRequest) returns (UrlDataResponse) {}
+}
+
+message LongUrlRequest {
+  string longUrl = 1;
+}
+
+message UrlDataResponse {
+  string longUrl = 1;
+  string shortUrl = 2;
+}
