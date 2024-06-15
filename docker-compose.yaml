@@ -19,8 +19,6 @@ services:
 
   url_shortener_service:
     build: ./url_shortener_service
-    ports:
-      - "8000:8000"
     environment:
       ENV: "local"
 
@@ -34,7 +32,8 @@ services:
       REDIS_PORT: "6379"
       REDIS_PASSWORD: "redis"
 
-      SERVER_DOMAIN: "localhost:8000"
+      KAFKA_ADDRS: "kafka1:9092"
+
     networks:
       - service_network
     depends_on:
@@ -49,8 +48,6 @@ services:
 
   analytics_service:
     build: ./analytics_service
-    ports:
-      - "8001:8001"
     environment:
       ENV: "local"
 
@@ -68,9 +65,17 @@ services:
   api_gateway:
     build: ./api_gateway
     ports:
-      - "8200:8200"
+      - "8000:8000"
     environment:
       ENV: "local"
+
+      URL_SERVICE_HOST: "url_shortener_service"
+      URL_SERVICE_PORT: "8101"
+
+      ANALYTICS_SERVICE_HOST: "analytics_service"
+      ANALYTICS_SERVICE_PORT: "8102"
+
+      SERVER_DOMAIN: "localhost"
     networks:
       - service_network
     depends_on:
