@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"analytics_service/internal/config"
 	"analytics_service/internal/converter"
 	"analytics_service/internal/repository/clickhouserepo"
 	"analytics_service/internal/service"
@@ -25,27 +26,18 @@ const (
 	envLocal = "local"
 	envProd  = "prod"
 
-	envKey = "ENV"
-
-	clickhouseUsername = "CLICKHOUSE_USERNAME"
-	clickhousePassword = "CLICKHOUSE_PASSWORD"
-	clickhouseHost     = "CLICKHOUSE_HOST"
-	clickhousePort     = "CLICKHOUSE_PORT"
-	clickhouseDatabase = "CLICKHOUSE_DATABASE"
-
 	httpServerPort    = "8002"
 	grpcServerPort    = "8102"
 	grpcServerNetwork = "tcp"
 )
 
 func Run() {
-	env := os.Getenv(envKey)
-	if env == "" {
-		msg := fmt.Sprintf("You did not provide env: %s", envKey)
-		panic(msg)
+	cfg, err := config.ParseConfig()
+	if err != nil {
+		panic(err)
 	}
 
-	logger, err := setupLogger(env)
+	logger, err := setupLogger(cfg.Env)
 	if err != nil {
 		panic(err)
 	}
@@ -53,7 +45,7 @@ func Run() {
 	topURLConverter := converter.NewTopURLConverter()
 	paginationConverter := converter.NewPaginationConverter()
 
-	clickhouseConn, err := setupClickhouseConn()
+	clickhouseConn, err := setupClickhouseConn(cfg.ClickhouseConfig)
 	if err != nil {
 		panic(err)
 	}
@@ -139,38 +131,17 @@ func setupLogger(env string) (*slog.Logger, error) {
 	return logger, nil
 }
 
-func setupClickhouseConn() (driver.Conn, error) {
-	username := os.Getenv(clickhouseUsername)
-	if username == "" {
-		return nil, fmt.Errorf("you did not provide env: %s", clickhouseUsername)
-	}
-	password := os.Getenv(clickhousePassword)
-	if password == "" {
-		return nil, fmt.Errorf("you did not provice env: %s", clickhousePassword)
-	}
-	host := os.Getenv(clickhouseHost)
-	if host == "" {
-		return nil, fmt.Errorf("you did not provide env: %s", clickhouseHost)
-	}
-	port := os.Getenv(clickhousePort)
-	if port == "" {
-		return nil, fmt.Errorf("you did not provide env: %s", clickhousePort)
-	}
+func setupClickhouseConn(clickhouseCfg config.ClickhouseConfig) (driver.Conn, error) {
 
-	database := os.Getenv(clickhouseDatabase)
-	if database == "" {
-		return nil, fmt.Errorf("you did not provice env: %s", clickhouseDatabase)
-	}
-
-	addr := fmt.Sprintf("%s:%s", host, port)
+	addr := fmt.Sprintf("%s:%s", clickhouseCfg.Host, clickhouseCfg.Port)
 
 	conn, err := clickhouse.Open(&clickhouse.Options{
 		Protocol: clickhouse.Native,
 		Addr:     []string{addr},
 		Auth: clickhouse.Auth{
-			Database: database,
-			Username: username,
-			Password: password,
+			Database: clickhouseCfg.Database,
+			Username: clickhouseCfg.Username,
+			Password: clickhouseCfg.Password,
 		},
 		Debug:           true,
 		DialTimeout:     30 * time.Second,
