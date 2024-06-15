@@ -15,3 +15,6 @@ create_cover_out:
 
 create_cover_html:
 	go tool cover -html cover.out -o cover.html
+
+gen_proto_url:
+	protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative pkg/proto/url.proto

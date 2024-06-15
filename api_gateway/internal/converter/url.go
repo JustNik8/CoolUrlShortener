@@ -2,7 +2,7 @@ package converter
 
 import (
 	"api_gateway/internal/transport/rest/dto"
-	analytics "api_gateway/pkg/proto"
+	"api_gateway/pkg/proto/analytics"
 )
 
 type TopURLConverter struct {

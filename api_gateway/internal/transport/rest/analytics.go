@@ -11,7 +11,7 @@ import (
 	"api_gateway/internal/converter"
 	"api_gateway/internal/transport/rest/dto"
 	"api_gateway/internal/transport/rest/response"
-	analytics "api_gateway/pkg/proto"
+	"api_gateway/pkg/proto/analytics"
 	"google.golang.org/grpc/status"
 )
 
@@ -22,7 +22,7 @@ const (
 
 type AnalyticsHandler struct {
 	logger              *slog.Logger
-	grpcClient          analytics.AnalyticsClient
+	analyticsGrpcClient analytics.AnalyticsClient
 	topUrlConverter     converter.TopURLConverter
 	paginationConverter converter.PaginationConverter
 }
@@ -35,13 +35,16 @@ func NewAnalyticsHandler(
 ) *AnalyticsHandler {
 	return &AnalyticsHandler{
 		logger:              logger,
-		grpcClient:          grpcClient,
+		analyticsGrpcClient: grpcClient,
 		topUrlConverter:     topUrlConverter,
 		paginationConverter: paginationConverter,
 	}
 }
 
 func (h *AnalyticsHandler) GetTopURLs(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Access-Control-Allow-Origin", "*")
+	w.Header().Add("Access-Control-Allow-Credentials", "true")
+
 	pageRaw := r.URL.Query().Get(pageQueryParam)
 	if pageRaw == "" {
 		msg := fmt.Sprintf("Query param '%s' is empty", pageQueryParam)
@@ -68,7 +71,7 @@ func (h *AnalyticsHandler) GetTopURLs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	topUrlsGrpcResp, err := h.grpcClient.GetTopUrls(context.Background(), &analytics.TopUrlsRequest{
+	topUrlsGrpcResp, err := h.analyticsGrpcClient.GetTopUrls(context.Background(), &analytics.TopUrlsRequest{
 		Page:  int64(page),
 		Limit: int64(limit),
 	})
@@ -96,6 +99,6 @@ func (h *AnalyticsHandler) GetTopURLs(w http.ResponseWriter, r *http.Request) {
 		response.InternalServerError(w)
 		return
 	}
-	
+
 	response.WriteResponse(w, http.StatusOK, respBytes)
 }

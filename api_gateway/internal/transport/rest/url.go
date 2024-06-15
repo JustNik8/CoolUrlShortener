@@ -3,16 +3,16 @@ package rest
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 
-	"CoolUrlShortener/internal/errs"
-	"CoolUrlShortener/internal/service"
-	"CoolUrlShortener/internal/transport/rest/dto"
-	"CoolUrlShortener/internal/transport/rest/response"
+	"api_gateway/internal/transport/rest/dto"
+	"api_gateway/internal/transport/rest/response"
+	"api_gateway/pkg/proto/url"
 	"github.com/go-playground/validator/v10"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const (
@@ -21,23 +21,26 @@ const (
 )
 
 type URLHandler struct {
-	logger       *slog.Logger
-	urlService   service.URLService
-	validate     *validator.Validate
-	serverDomain string
+	logger        *slog.Logger
+	urlGrpcClient url.UrlClient
+	validate      *validator.Validate
+	serverDomain  string
+	serverPort    string
 }
 
 func NewURLHandler(
 	logger *slog.Logger,
-	urlService service.URLService,
+	urlGrpcClient url.UrlClient,
 	validate *validator.Validate,
 	serverDomain string,
+	serverPort string,
 ) *URLHandler {
 	return &URLHandler{
-		logger:       logger,
-		urlService:   urlService,
-		validate:     validate,
-		serverDomain: serverDomain,
+		logger:        logger,
+		urlGrpcClient: urlGrpcClient,
+		validate:      validate,
+		serverDomain:  serverDomain,
+		serverPort:    serverPort,
 	}
 }
 
@@ -66,21 +69,24 @@ func (h *URLHandler) FollowUrl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	longURL, err := h.urlService.GetLongURL(context.Background(), shortUrl)
+	longURLResp, err := h.urlGrpcClient.FollowUrl(context.Background(), &url.ShortUrlRequest{
+		ShortUrl: shortUrl,
+	})
 	if err != nil {
 		h.logger.Error(err.Error())
-		if errors.Is(err, errs.ErrNoURL) {
-			msg := "short url not found"
-			h.logger.Info(msg)
-			response.NotFound(w, msg)
-			return
+		st, ok := status.FromError(err)
+		if ok {
+			if st.Code() == codes.NotFound {
+				response.NotFound(w, err.Error())
+				return
+			}
 		}
 
 		response.InternalServerError(w)
-		return
+
 	}
 
-	http.Redirect(w, r, longURL, http.StatusFound)
+	http.Redirect(w, r, longURLResp.LongUrl, http.StatusFound)
 }
 
 // SaveURL docs
@@ -118,14 +124,16 @@ func (h *URLHandler) SaveURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	shortURLRaw, err := h.urlService.SaveURL(context.Background(), longURLData.LongURL)
+	shortURLResp, err := h.urlGrpcClient.ShortenUrl(context.Background(), &url.LongUrlRequest{
+		LongUrl: longURLData.LongURL,
+	})
 	if err != nil {
 		h.logger.Error(err.Error())
 		response.InternalServerError(w)
 		return
 	}
 
-	shortURL := fmt.Sprintf("%s://%s/%s", serverProtocol, h.serverDomain, shortURLRaw)
+	shortURL := fmt.Sprintf("%s://%s:%s/%s", serverProtocol, h.serverDomain, h.serverPort, shortURLResp.ShortUrl)
 	urlData := dto.URlData{
 		LongURL:  longURLData.LongURL,
 		ShortURL: shortURL,

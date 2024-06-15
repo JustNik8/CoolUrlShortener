@@ -6,9 +6,12 @@ import (
 	"net/http"
 	"os"
 
+	"api_gateway/internal/config"
 	"api_gateway/internal/converter"
 	"api_gateway/internal/transport/rest"
-	analytics "api_gateway/pkg/proto"
+	"api_gateway/pkg/proto/analytics"
+	"api_gateway/pkg/proto/url"
+	"github.com/go-playground/validator/v10"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -17,17 +20,16 @@ const (
 	envLocal = "local"
 	envProd  = "prod"
 
-	envKey = "ENV"
+	httpServerPort = "8000"
 )
 
 func Run() {
-	env := os.Getenv(envKey)
-	if env == "" {
-		msg := fmt.Sprintf("You did not provide env: %s", envKey)
-		panic(msg)
+	cfg, err := config.ParseConfig()
+	if err != nil {
+		panic(err)
 	}
 
-	logger, err := setupLogger(env)
+	logger, err := setupLogger(cfg.Env)
 	if err != nil {
 		panic(err)
 	}
@@ -35,20 +37,35 @@ func Run() {
 	topUrlConverter := converter.NewTopURLConverter()
 	paginationConverter := converter.NewPaginationConverter()
 
-	target := fmt.Sprintf("%s:%s", "analytics_service", "8101")
-	transportOpt := grpc.WithTransportCredentials(insecure.NewCredentials())
+	urlTarget := fmt.Sprintf("%s:%s", cfg.UrlServiceConfig.Host, cfg.UrlServiceConfig.Port)
+	urlTransportOpr := grpc.WithTransportCredentials(insecure.NewCredentials())
 
-	conn, err := grpc.NewClient(target, transportOpt)
+	urlConn, err := grpc.NewClient(urlTarget, urlTransportOpr)
 	if err != nil {
 		panic(err)
 	}
-	analyticsClient := analytics.NewAnalyticsClient(conn)
+	urlClient := url.NewUrlClient(urlConn)
+
+	analyticsTarget := fmt.Sprintf("%s:%s", cfg.AnalyticsServiceConfig.Host, cfg.AnalyticsServiceConfig.Port)
+	analyticsTransportOpt := grpc.WithTransportCredentials(insecure.NewCredentials())
+
+	analyticsConn, err := grpc.NewClient(analyticsTarget, analyticsTransportOpt)
+	if err != nil {
+		panic(err)
+	}
+	analyticsClient := analytics.NewAnalyticsClient(analyticsConn)
+
+	urlHandler := rest.NewURLHandler(logger, urlClient, validator.New(), cfg.ServerDomain, httpServerPort)
 
 	analyticsHandler := rest.NewAnalyticsHandler(logger, analyticsClient, topUrlConverter, paginationConverter)
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/top_urls", analyticsHandler.GetTopURLs)
+	mux.HandleFunc("POST /api/save_url", urlHandler.SaveURL)
+	mux.HandleFunc("OPTIONS /api/save_url", urlHandler.SaveURLOptions)
+	mux.HandleFunc("GET /{short_url}", urlHandler.FollowUrl)
 
-	addr := fmt.Sprintf(":%s", "8200")
+	addr := fmt.Sprintf(":%s", httpServerPort)
 	server := http.Server{
 		Addr:    addr,
 		Handler: mux,
