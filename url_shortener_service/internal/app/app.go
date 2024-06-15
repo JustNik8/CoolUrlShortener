@@ -18,12 +18,9 @@ import (
 	"CoolUrlShortener/internal/transport/rest"
 	url "CoolUrlShortener/pkg/proto"
 	"CoolUrlShortener/pkg/shortener"
-	"github.com/go-playground/validator/v10"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
 	"google.golang.org/grpc"
-
-	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 const (
@@ -43,8 +40,8 @@ const (
 
 	serverDomainKey = "SERVER_DOMAIN"
 
-	serverPort        = "8000"
-	grpcServerPort    = "8001"
+	httpServerPort    = "8001"
+	grpcServerPort    = "8101"
 	grpcServerNetwork = "tcp"
 )
 
@@ -83,8 +80,6 @@ func Run() {
 	}
 	defer dbPool.Close()
 
-	validate := validator.New(validator.WithRequiredStructEnabled())
-
 	eventsServiceProducer, err := events.NewKafkaEventProducer(logger, []string{"kafka1:9092"}, nil, doneCh)
 	if err != nil {
 		panic(err)
@@ -100,19 +95,14 @@ func Run() {
 	urlCache := rediscache.NewURLCacheRedis(redisClient)
 	urlRepo := postgresql.NewUrlRepoPostgres(dbPool)
 	urlService := service.NewURLService(logger, urlRepo, urlCache, eventsServiceProducer, base62URLShortener)
-	urlHandler := rest.NewURLHandler(logger, urlService, validate, serverDomain)
 
 	healthCheckHandler := rest.NewHealthCheckHandler(logger)
 
 	go func() {
 		mux := http.NewServeMux()
-		mux.HandleFunc("/api/docs/", httpSwagger.WrapHandler)
 		mux.HandleFunc("GET /api/healthcheck", healthCheckHandler.HealthCheck)
-		mux.HandleFunc("POST /api/save_url", urlHandler.SaveURL)
-		mux.HandleFunc("OPTIONS /api/save_url", urlHandler.SaveURLOptions)
-		mux.HandleFunc("GET /{short_url}", urlHandler.FollowUrl)
 
-		addr := fmt.Sprintf(":%s", serverPort)
+		addr := fmt.Sprintf(":%s", httpServerPort)
 		server := http.Server{
 			Addr:    addr,
 			Handler: mux,

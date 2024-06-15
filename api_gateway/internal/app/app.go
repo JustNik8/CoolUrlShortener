@@ -37,7 +37,7 @@ func Run() {
 	topUrlConverter := converter.NewTopURLConverter()
 	paginationConverter := converter.NewPaginationConverter()
 
-	analyticsTarget := fmt.Sprintf("%s:%s", "analytics_service", "8101")
+	analyticsTarget := fmt.Sprintf("%s:%s", "analytics_service", "8102")
 	analyticsTransportOpt := grpc.WithTransportCredentials(insecure.NewCredentials())
 
 	analyticsConn, err := grpc.NewClient(analyticsTarget, analyticsTransportOpt)
@@ -46,7 +46,7 @@ func Run() {
 	}
 	analyticsClient := analytics.NewAnalyticsClient(analyticsConn)
 
-	urlTarget := fmt.Sprintf("%s:%s", "url_shortener_service", "8001")
+	urlTarget := fmt.Sprintf("%s:%s", "url_shortener_service", "8101")
 	urlTransportOpr := grpc.WithTransportCredentials(insecure.NewCredentials())
 
 	urlConn, err := grpc.NewClient(urlTarget, urlTransportOpr)
@@ -56,7 +56,7 @@ func Run() {
 	urlClient := url.NewUrlClient(urlConn)
 
 	analyticsHandler := rest.NewAnalyticsHandler(logger, analyticsClient, topUrlConverter, paginationConverter)
-	urlHandler := rest.NewURLHandler(logger, urlClient, validator.New(), "localhost:8200")
+	urlHandler := rest.NewURLHandler(logger, urlClient, validator.New(), "localhost:8000")
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/top_urls", analyticsHandler.GetTopURLs)
@@ -64,7 +64,7 @@ func Run() {
 	mux.HandleFunc("OPTIONS /api/save_url", urlHandler.SaveURLOptions)
 	mux.HandleFunc("GET /{short_url}", urlHandler.FollowUrl)
 
-	addr := fmt.Sprintf(":%s", "8200")
+	addr := fmt.Sprintf(":%s", "8000")
 	server := http.Server{
 		Addr:    addr,
 		Handler: mux,

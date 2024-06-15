@@ -19,8 +19,6 @@ services:
 
   url_shortener_service:
     build: ./url_shortener_service
-    ports:
-      - "8000:8000"
     environment:
       ENV: "local"
 
@@ -49,8 +47,6 @@ services:
 
   analytics_service:
     build: ./analytics_service
-    ports:
-      - "8001:8001"
     environment:
       ENV: "local"
 
@@ -68,7 +64,7 @@ services:
   api_gateway:
     build: ./api_gateway
     ports:
-      - "8200:8200"
+      - "8000:8000"
     environment:
       ENV: "local"
     networks:

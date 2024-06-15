@@ -33,8 +33,8 @@ const (
 	clickhousePort     = "CLICKHOUSE_PORT"
 	clickhouseDatabase = "CLICKHOUSE_DATABASE"
 
-	httpServerPort    = "8001"
-	grpcServerPort    = "8101"
+	httpServerPort    = "8002"
+	grpcServerPort    = "8102"
 	grpcServerNetwork = "tcp"
 )
 
