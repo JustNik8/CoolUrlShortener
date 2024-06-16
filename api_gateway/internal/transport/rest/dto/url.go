@@ -13,7 +13,7 @@ type TopURLDataResponse struct {
 }
 
 type LongURLData struct {
-	LongURL string `json:"long_url" validate:"required"`
+	LongURL string `json:"long_url"`
 }
 
 type URlData struct {

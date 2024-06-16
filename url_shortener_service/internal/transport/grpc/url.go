@@ -29,6 +29,11 @@ func NewUrlServer(
 }
 
 func (s *UrlServer) ShortenUrl(ctx context.Context, req *url.LongUrlRequest) (*url.UrlDataResponse, error) {
+	err := req.Validate()
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
 	shortURL, err := s.urlService.SaveURL(ctx, req.LongUrl)
 	if err != nil {
 		s.logger.Error(err.Error())
@@ -42,6 +47,11 @@ func (s *UrlServer) ShortenUrl(ctx context.Context, req *url.LongUrlRequest) (*u
 }
 
 func (s *UrlServer) FollowUrl(ctx context.Context, req *url.ShortUrlRequest) (*url.LongUrlResponse, error) {
+	err := req.Validate()
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
 	longUrl, err := s.urlService.GetLongURL(ctx, req.ShortUrl)
 	if err != nil {
 		s.logger.Error(err.Error())

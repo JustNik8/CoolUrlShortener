@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v4.25.1
-// source: pkg/proto/url.proto
+// source: url.proto
 
 package url
 
@@ -137,5 +137,5 @@ var Url_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "pkg/proto/url.proto",
+	Metadata: "url.proto",
 }

@@ -11,6 +11,7 @@ import (
 	"api_gateway/internal/transport/rest/dto"
 	"api_gateway/internal/transport/rest/response"
 	"api_gateway/pkg/proto/analytics"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
@@ -50,8 +51,8 @@ func NewAnalyticsHandler(
 //	@ID				get-top-urls
 //	@Accept			json
 //	@Produce		json
-//	@Param			page	query		int	true	"Страница"
-//	@Param			limit	query		int	true	"Максимальное количество url на странице"
+//	@Param			page	query		int	false	"Страница"
+//	@Param			limit	query		int	false	"Максимальное количество url на странице"
 //	@Success		200		{object}	dto.TopURLDataResponse
 //	@Failure		400		{object}	response.Body
 //	@Failure		500		{object}	response.Body
@@ -82,12 +83,18 @@ func (h *AnalyticsHandler) GetTopURLs(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
-		st, ok := status.FromError(err)
-		if ok {
-			h.logger.Error(st.Code().String())
-			h.logger.Error(st.Message())
-		}
 		h.logger.Error(err.Error())
+
+		st, ok := status.FromError(err)
+		if !ok || st.Code() == codes.Internal {
+			response.InternalServerError(w)
+			return
+		}
+
+		if st.Code() == codes.InvalidArgument {
+			response.BadRequest(w, st.Message())
+			return
+		}
 
 		response.InternalServerError(w)
 		return
