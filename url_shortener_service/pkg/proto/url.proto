@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 package url;
+import "validate/validate.proto";
 
 option go_package = "./;url";
 
@@ -10,7 +11,7 @@ service Url {
 }
 
 message LongUrlRequest {
-  string longUrl = 1;
+  string longUrl = 1 [(validate.rules).string.min_len=1];
 }
 
 message UrlDataResponse {
@@ -19,7 +20,7 @@ message UrlDataResponse {
 }
 
 message ShortUrlRequest {
-  string shortUrl = 1;
+  string shortUrl = 1 [(validate.rules).string.min_len=1];
 }
 
 message LongUrlResponse {
