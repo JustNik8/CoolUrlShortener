@@ -9,10 +9,11 @@ import (
 	"api_gateway/internal/config"
 	"api_gateway/internal/converter"
 	"api_gateway/internal/transport/rest"
+	"api_gateway/internal/transport/rest/middlewares"
 	"api_gateway/pkg/proto/analytics"
 	"api_gateway/pkg/proto/url"
-	"github.com/go-playground/validator/v10"
 	httpSwagger "github.com/swaggo/http-swagger"
+	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -25,6 +26,7 @@ const (
 )
 
 func Run() {
+
 	cfg, err := config.ParseConfig()
 	if err != nil {
 		panic(err)
@@ -56,16 +58,26 @@ func Run() {
 	}
 	analyticsClient := analytics.NewAnalyticsClient(analyticsConn)
 
-	urlHandler := rest.NewURLHandler(logger, urlClient, validator.New(), cfg.ServerDomain, httpServerPort)
+	limiter := rate.NewLimiter(rate.Limit(cfg.RateLimitConfig.TokensPerSecond), cfg.RateLimitConfig.BurstSize)
+	rateLimitMiddleware := middlewares.NewRateLimiterMiddleware(
+		logger, limiter,
+	)
 
+	urlHandler := rest.NewURLHandler(logger, urlClient, cfg.ServerDomain, httpServerPort)
 	analyticsHandler := rest.NewAnalyticsHandler(logger, analyticsClient, topUrlConverter, paginationConverter)
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /api/top_urls", analyticsHandler.GetTopURLs)
-	mux.HandleFunc("POST /api/save_url", urlHandler.SaveURL)
+	mux.Handle("GET /api/top_urls", rateLimitMiddleware.RateLimit(
+		http.HandlerFunc(analyticsHandler.GetTopURLs),
+	))
+	mux.Handle("POST /api/save_url", rateLimitMiddleware.RateLimit(
+		http.HandlerFunc(urlHandler.SaveURL),
+	))
 	mux.HandleFunc("OPTIONS /api/save_url", urlHandler.SaveURLOptions)
-	mux.HandleFunc("GET /{short_url}", urlHandler.FollowUrl)
-	mux.HandleFunc("GET /api/docs/", httpSwagger.WrapHandler)
+	mux.Handle("GET /{short_url}", rateLimitMiddleware.RateLimit(
+		http.HandlerFunc(urlHandler.FollowUrl),
+	))
+	mux.Handle("GET /api/docs/", httpSwagger.WrapHandler)
 
 	addr := fmt.Sprintf(":%s", httpServerPort)
 	server := http.Server{

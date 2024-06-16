@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strconv"
 )
 
 const (
@@ -15,6 +16,9 @@ const (
 	analyticsServicePortKey = "ANALYTICS_SERVICE_PORT"
 
 	serverDomainKey = "SERVER_DOMAIN"
+
+	rateLimitTokenPerSecondKey = "RATE_LIMIT_TOKEN_PER_SECOND"
+	rateLimitBurstSizeKey      = "RATE_LIMIT_BURST_SIZE"
 )
 
 type Config struct {
@@ -22,6 +26,7 @@ type Config struct {
 	ServerDomain           string
 	UrlServiceConfig       UrlServiceConfig
 	AnalyticsServiceConfig AnalyticsServiceConfig
+	RateLimitConfig        RateLimitConfig
 }
 
 type AnalyticsServiceConfig struct {
@@ -32,6 +37,11 @@ type AnalyticsServiceConfig struct {
 type UrlServiceConfig struct {
 	Host string
 	Port string
+}
+
+type RateLimitConfig struct {
+	TokensPerSecond float64
+	BurstSize       int
 }
 
 func ParseConfig() (Config, error) {
@@ -65,6 +75,24 @@ func ParseConfig() (Config, error) {
 		return Config{}, fmt.Errorf("you did not provide env: %s", serverDomainKey)
 	}
 
+	rateLimitTokenPerSecondRaw := os.Getenv(rateLimitTokenPerSecondKey)
+	if rateLimitTokenPerSecondRaw == "" {
+		return Config{}, fmt.Errorf("you did not provide env: %s", rateLimitTokenPerSecondKey)
+	}
+	rateLimitTokenPerSecond, err := strconv.ParseFloat(rateLimitTokenPerSecondRaw, 64)
+	if err != nil {
+		return Config{}, err
+	}
+
+	rateLimitBurstSizeRaw := os.Getenv(rateLimitBurstSizeKey)
+	if rateLimitBurstSizeRaw == "" {
+		return Config{}, fmt.Errorf("you did not provide env: %s", rateLimitBurstSizeKey)
+	}
+	rateLimitBurstSize, err := strconv.Atoi(rateLimitBurstSizeRaw)
+	if err != nil {
+		return Config{}, err
+	}
+
 	return Config{
 		Env:          env,
 		ServerDomain: serverDomain,
@@ -75,6 +103,10 @@ func ParseConfig() (Config, error) {
 		AnalyticsServiceConfig: AnalyticsServiceConfig{
 			Host: analyticsServiceHost,
 			Port: analyticsServicePort,
+		},
+		RateLimitConfig: RateLimitConfig{
+			TokensPerSecond: rateLimitTokenPerSecond,
+			BurstSize:       rateLimitBurstSize,
 		},
 	}, nil
 }
