@@ -57,7 +57,12 @@ func NewAnalyticsHandler(
 //	@Failure		500		{object}	response.Body
 //	@Router			/api/top_urls [get]
 func (h *AnalyticsHandler) GetTopURLs(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Access-Control-Allow-Origin", "*")
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		origin = "*"
+	}
+
+	w.Header().Add("Access-Control-Allow-Origin", origin)
 	w.Header().Add("Access-Control-Allow-Credentials", "true")
 
 	page, err := h.parseQueryParam(r, pageQueryParam, defaultPage)
