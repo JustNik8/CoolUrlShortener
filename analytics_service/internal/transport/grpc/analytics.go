@@ -45,6 +45,11 @@ func (s *AnalyticsServer) GetTopUrls(
 	ctx context.Context,
 	req *analytics.TopUrlsRequest,
 ) (*analytics.TopUrlsResponse, error) {
+	err := req.Validate()
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
 	paginationParams := domain.PaginationParams{
 		Page:  int(req.Page),
 		Limit: int(req.Limit),

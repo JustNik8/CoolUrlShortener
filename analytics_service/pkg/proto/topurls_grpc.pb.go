@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v4.25.1
-// source: pkg/proto/topurls.proto
+// source: topurls.proto
 
 package analytics
 
@@ -101,5 +101,5 @@ var Analytics_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "pkg/proto/topurls.proto",
+	Metadata: "topurls.proto",
 }
