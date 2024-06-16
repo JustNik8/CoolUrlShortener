@@ -63,27 +63,28 @@ func (h *URLHandler) FollowUrl(w http.ResponseWriter, r *http.Request) {
 	msg := fmt.Sprintf("got url: %s", shortUrl)
 	h.logger.Info(msg)
 
-	if shortUrl == "" {
-		msg := "short url is empty"
-		response.BadRequest(w, msg)
-		return
-	}
-
 	longURLResp, err := h.urlGrpcClient.FollowUrl(context.Background(), &url.ShortUrlRequest{
 		ShortUrl: shortUrl,
 	})
 	if err != nil {
 		h.logger.Error(err.Error())
 		st, ok := status.FromError(err)
-		if ok {
-			if st.Code() == codes.NotFound {
-				response.NotFound(w, err.Error())
-				return
-			}
+		if !ok || st.Code() == codes.Internal {
+			response.InternalServerError(w)
+			return
+		}
+
+		if st.Code() == codes.NotFound {
+			response.NotFound(w, err.Error())
+			return
+		}
+		if st.Code() == codes.InvalidArgument {
+			response.BadRequest(w, st.Message())
+			return
 		}
 
 		response.InternalServerError(w)
-
+		return
 	}
 
 	http.Redirect(w, r, longURLResp.LongUrl, http.StatusFound)
@@ -118,17 +119,21 @@ func (h *URLHandler) SaveURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.validate.Struct(longURLData)
-	if err != nil {
-		response.BadRequest(w, err.Error())
-		return
-	}
-
 	shortURLResp, err := h.urlGrpcClient.ShortenUrl(context.Background(), &url.LongUrlRequest{
 		LongUrl: longURLData.LongURL,
 	})
 	if err != nil {
 		h.logger.Error(err.Error())
+		st, ok := status.FromError(err)
+		if !ok || st.Code() == codes.Internal {
+			response.InternalServerError(w)
+			return
+		}
+		if st.Code() == codes.InvalidArgument {
+			response.BadRequest(w, err.Error())
+			return
+		}
+
 		response.InternalServerError(w)
 		return
 	}

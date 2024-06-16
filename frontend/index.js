@@ -8,6 +8,7 @@ function setupServerDomain() {
     fetch("domain.txt")
         .then(response => response.text())
         .then(text => {
+            console.log(serverDomain)
             serverDomain = text
         })
         .then(() => loadTopUrl())
