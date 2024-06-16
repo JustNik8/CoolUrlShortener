@@ -3,10 +3,15 @@ module analytics_service
 go 1.22.0
 
 require (
+	github.com/ClickHouse/clickhouse-go/v2 v2.25.0
+	github.com/envoyproxy/protoc-gen-validate v1.0.4
+	google.golang.org/grpc v1.64.0
+	google.golang.org/protobuf v1.33.0
+)
+
+require (
 	github.com/ClickHouse/ch-go v0.61.5 // indirect
-	github.com/ClickHouse/clickhouse-go/v2 v2.25.0 // indirect
 	github.com/andybalholm/brotli v1.1.0 // indirect
-	github.com/envoyproxy/protoc-gen-validate v1.0.4 // indirect
 	github.com/go-faster/city v1.0.1 // indirect
 	github.com/go-faster/errors v0.7.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
@@ -22,7 +27,5 @@ require (
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240318140521-94a12d6c2237 // indirect
-	google.golang.org/grpc v1.64.0 // indirect
-	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

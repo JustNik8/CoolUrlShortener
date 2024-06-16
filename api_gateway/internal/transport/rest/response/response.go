@@ -52,3 +52,7 @@ func OKMessage(w http.ResponseWriter, text string) {
 func InternalServerError(w http.ResponseWriter) {
 	WriteMessage(w, http.StatusInternalServerError, "Internal server error")
 }
+
+func TooManyRequests(w http.ResponseWriter) {
+	WriteMessage(w, http.StatusTooManyRequests, "The API is at capacity, try again later.")
+}

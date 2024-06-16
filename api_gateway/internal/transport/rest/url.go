@@ -10,7 +10,6 @@ import (
 	"api_gateway/internal/transport/rest/dto"
 	"api_gateway/internal/transport/rest/response"
 	"api_gateway/pkg/proto/url"
-	"github.com/go-playground/validator/v10"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -23,7 +22,6 @@ const (
 type URLHandler struct {
 	logger        *slog.Logger
 	urlGrpcClient url.UrlClient
-	validate      *validator.Validate
 	serverDomain  string
 	serverPort    string
 }
@@ -31,14 +29,12 @@ type URLHandler struct {
 func NewURLHandler(
 	logger *slog.Logger,
 	urlGrpcClient url.UrlClient,
-	validate *validator.Validate,
 	serverDomain string,
 	serverPort string,
 ) *URLHandler {
 	return &URLHandler{
 		logger:        logger,
 		urlGrpcClient: urlGrpcClient,
-		validate:      validate,
 		serverDomain:  serverDomain,
 		serverPort:    serverPort,
 	}
