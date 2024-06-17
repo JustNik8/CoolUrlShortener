@@ -5,6 +5,7 @@ import (
 	"analytics_service/internal/repository"
 )
 
+//go:generate go run github.com/vektra/mockery/v2@v2.42.1 --name PaginationService
 type PaginationService interface {
 	GetPaginationInfo(table string, paginationParams domain.PaginationParams) (domain.Pagination, error)
 }
