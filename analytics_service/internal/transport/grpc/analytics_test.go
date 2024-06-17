@@ -18,6 +18,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
 )
@@ -54,7 +55,8 @@ func initAnalyticsClient(
 		return lis.Dial()
 	}
 
-	conn, err := grpc.DialContext(context.Background(), "bufnet", grpc.WithContextDialer(bufDialer), grpc.WithInsecure())
+	transportOpt := grpc.WithTransportCredentials(insecure.NewCredentials())
+	conn, err := grpc.NewClient("passthrough://bufnet", grpc.WithContextDialer(bufDialer), transportOpt)
 	if err != nil {
 		log.Fatalf("Failed to dial bufnet: %v", err)
 	}
@@ -220,7 +222,7 @@ func TestGetTopUrls(t *testing.T) {
 
 			resp, err := analyticsClient.GetTopUrls(context.Background(), tc.request)
 			isErrorHappened := err != nil
-
+			log.Println(err)
 			assert.Equal(t, tc.isErrExpected, isErrorHappened)
 			if tc.isErrExpected {
 				st, ok := status.FromError(err)
