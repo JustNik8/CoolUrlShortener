@@ -20,7 +20,47 @@ package rest
 //	"github.com/stretchr/testify/assert"
 //	"github.com/stretchr/testify/mock"
 //)
+
+//func TestFollowUrl(t *testing.T) {
+//	logger := slog.New(
+//		slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+//	)
 //
+//	testCases := []struct {
+//		name               string
+//		buildUrlGrpcClient func() url.UrlClient
+//	}{
+//		{
+//			name : ""
+//			buildUrlGrpcClient: func() url.UrlClient {
+//				NewUrlCl
+//			},
+//		},
+//	}
+//
+//	for _, tc := range testCases {
+//		t.Run(tc.name, func(t *testing.T) {
+//			handler := NewURLHandler(
+//				logger,
+//				tc.buildURLService(),
+//				validate,
+//				serverDomain,
+//			)
+//
+//			path := fmt.Sprintf("%s/%s", basePath, tc.shortURL)
+//			req := httptest.NewRequest(http.MethodGet, path, nil)
+//			rec := httptest.NewRecorder()
+//
+//			mux := http.NewServeMux()
+//			mux.HandleFunc("GET /{short_url}", handler.FollowUrl)
+//
+//			mux.ServeHTTP(rec, req)
+//
+//			assert.Equal(t, tc.expectedCode, rec.Code)
+//		})
+//	}
+//}
+
 //func TestFollowUrl(t *testing.T) {
 //	logger := slog.New(
 //		slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),

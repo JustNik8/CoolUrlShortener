@@ -3,15 +3,15 @@ package rest
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 
+	"api_gateway/errs"
+	"api_gateway/internal/client"
 	"api_gateway/internal/transport/rest/dto"
 	"api_gateway/internal/transport/rest/response"
-	"api_gateway/pkg/proto/url"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 const (
@@ -20,23 +20,23 @@ const (
 )
 
 type URLHandler struct {
-	logger        *slog.Logger
-	urlGrpcClient url.UrlClient
-	serverDomain  string
-	serverPort    string
+	logger       *slog.Logger
+	urlClient    client.UrlClient
+	serverDomain string
+	serverPort   string
 }
 
 func NewURLHandler(
 	logger *slog.Logger,
-	urlGrpcClient url.UrlClient,
+	urlClient client.UrlClient,
 	serverDomain string,
 	serverPort string,
 ) *URLHandler {
 	return &URLHandler{
-		logger:        logger,
-		urlGrpcClient: urlGrpcClient,
-		serverDomain:  serverDomain,
-		serverPort:    serverPort,
+		logger:       logger,
+		urlClient:    urlClient,
+		serverDomain: serverDomain,
+		serverPort:   serverPort,
 	}
 }
 
@@ -56,26 +56,15 @@ func (h *URLHandler) FollowUrl(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Access-Control-Allow-Credentials", "true")
 
 	shortUrl := r.PathValue(shortUrlPathValue)
-	msg := fmt.Sprintf("got url: %s", shortUrl)
-	h.logger.Info(msg)
 
-	longURLResp, err := h.urlGrpcClient.FollowUrl(context.Background(), &url.ShortUrlRequest{
-		ShortUrl: shortUrl,
-	})
+	longUrl, err := h.urlClient.FollowUrl(context.Background(), shortUrl)
 	if err != nil {
-		h.logger.Error(err.Error())
-		st, ok := status.FromError(err)
-		if !ok || st.Code() == codes.Internal {
-			response.InternalServerError(w)
+		if errors.Is(err, errs.ErrNotFound) {
+			response.NotFound(w, "short url not found")
 			return
 		}
-
-		if st.Code() == codes.NotFound {
-			response.NotFound(w, err.Error())
-			return
-		}
-		if st.Code() == codes.InvalidArgument {
-			response.BadRequest(w, st.Message())
+		if errors.Is(err, errs.ErrInvalidArgument) {
+			response.BadRequest(w, "bad short url")
 			return
 		}
 
@@ -83,7 +72,7 @@ func (h *URLHandler) FollowUrl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, longURLResp.LongUrl, http.StatusFound)
+	http.Redirect(w, r, longUrl, http.StatusFound)
 }
 
 // SaveURL docs
@@ -115,26 +104,17 @@ func (h *URLHandler) SaveURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	shortURLResp, err := h.urlGrpcClient.ShortenUrl(context.Background(), &url.LongUrlRequest{
-		LongUrl: longURLData.LongURL,
-	})
+	shortURLRaw, err := h.urlClient.ShortenUrl(context.Background(), longURLData.LongURL)
 	if err != nil {
-		h.logger.Error(err.Error())
-		st, ok := status.FromError(err)
-		if !ok || st.Code() == codes.Internal {
-			response.InternalServerError(w)
-			return
-		}
-		if st.Code() == codes.InvalidArgument {
+		if errors.Is(err, errs.ErrInvalidArgument) {
 			response.BadRequest(w, err.Error())
 			return
 		}
-
 		response.InternalServerError(w)
 		return
 	}
 
-	shortURL := fmt.Sprintf("%s://%s:%s/%s", serverProtocol, h.serverDomain, h.serverPort, shortURLResp.ShortUrl)
+	shortURL := fmt.Sprintf("%s://%s:%s/%s", serverProtocol, h.serverDomain, h.serverPort, shortURLRaw)
 	urlData := dto.URlData{
 		LongURL:  longURLData.LongURL,
 		ShortURL: shortURL,

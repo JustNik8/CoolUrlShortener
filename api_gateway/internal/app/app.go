@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"api_gateway/internal/client"
 	"api_gateway/internal/config"
 	"api_gateway/internal/converter"
 	"api_gateway/internal/transport/rest"
@@ -47,7 +48,7 @@ func Run() {
 	if err != nil {
 		panic(err)
 	}
-	urlClient := url.NewUrlClient(urlConn)
+	grpcUrlClient := url.NewUrlClient(urlConn)
 
 	analyticsTarget := fmt.Sprintf("%s:%s", cfg.AnalyticsServiceConfig.Host, cfg.AnalyticsServiceConfig.Port)
 	analyticsTransportOpt := grpc.WithTransportCredentials(insecure.NewCredentials())
@@ -63,6 +64,7 @@ func Run() {
 		logger, limiter,
 	)
 
+	urlClient := client.NewGrpcUrlClient(logger, grpcUrlClient)
 	urlHandler := rest.NewURLHandler(logger, urlClient, cfg.ServerDomain, httpServerPort)
 	analyticsHandler := rest.NewAnalyticsHandler(logger, analyticsClient, topUrlConverter, paginationConverter)
 
