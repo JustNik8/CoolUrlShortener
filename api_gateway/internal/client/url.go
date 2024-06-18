@@ -10,6 +10,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+//go:generate go run github.com/vektra/mockery/v2@v2.42.1 --name UrlClient
 type UrlClient interface {
 	FollowUrl(ctx context.Context, shortUrl string) (string, error)
 	ShortenUrl(ctx context.Context, longUrl string) (string, error)
