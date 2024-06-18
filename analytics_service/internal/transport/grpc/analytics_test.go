@@ -222,7 +222,7 @@ func TestGetTopUrls(t *testing.T) {
 
 			resp, err := analyticsClient.GetTopUrls(context.Background(), tc.request)
 			isErrorHappened := err != nil
-			log.Println(err)
+
 			assert.Equal(t, tc.isErrExpected, isErrorHappened)
 			if tc.isErrExpected {
 				st, ok := status.FromError(err)
