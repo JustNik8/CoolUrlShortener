@@ -3,16 +3,15 @@ package rest
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"strconv"
 
+	"api_gateway/errs"
+	"api_gateway/internal/client"
 	"api_gateway/internal/converter"
-	"api_gateway/internal/transport/rest/dto"
 	"api_gateway/internal/transport/rest/response"
-	"api_gateway/pkg/proto/analytics"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 const (
@@ -24,22 +23,18 @@ const (
 
 type AnalyticsHandler struct {
 	logger              *slog.Logger
-	analyticsGrpcClient analytics.AnalyticsClient
+	analyticsClient     client.AnalyticsClient
 	topUrlConverter     converter.TopURLConverter
 	paginationConverter converter.PaginationConverter
 }
 
 func NewAnalyticsHandler(
 	logger *slog.Logger,
-	grpcClient analytics.AnalyticsClient,
-	topUrlConverter converter.TopURLConverter,
-	paginationConverter converter.PaginationConverter,
+	analyticsClient client.AnalyticsClient,
 ) *AnalyticsHandler {
 	return &AnalyticsHandler{
-		logger:              logger,
-		analyticsGrpcClient: grpcClient,
-		topUrlConverter:     topUrlConverter,
-		paginationConverter: paginationConverter,
+		logger:          logger,
+		analyticsClient: analyticsClient,
 	}
 }
 
@@ -77,32 +72,14 @@ func (h *AnalyticsHandler) GetTopURLs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	topUrlsGrpcResp, err := h.analyticsGrpcClient.GetTopUrls(context.Background(), &analytics.TopUrlsRequest{
-		Page:  int64(page),
-		Limit: int64(limit),
-	})
+	topUrlsResp, err := h.analyticsClient.GetTopUrls(context.Background(), int64(page), int64(limit))
 
 	if err != nil {
-		h.logger.Error(err.Error())
-
-		st, ok := status.FromError(err)
-		if !ok || st.Code() == codes.Internal {
-			response.InternalServerError(w)
-			return
+		if errors.Is(err, errs.ErrInvalidArgument) {
+			response.BadRequest(w, "bad params")
 		}
-
-		if st.Code() == codes.InvalidArgument {
-			response.BadRequest(w, st.Message())
-			return
-		}
-
 		response.InternalServerError(w)
 		return
-	}
-
-	topUrlsResp := dto.TopURLDataResponse{
-		TopURLData: h.topUrlConverter.MapSlicePbToDto(topUrlsGrpcResp.TopUrlData),
-		Pagination: h.paginationConverter.MapPbToDto(topUrlsGrpcResp.Pagination),
 	}
 
 	respBytes, err := json.Marshal(topUrlsResp)

@@ -57,7 +57,8 @@ func Run() {
 	if err != nil {
 		panic(err)
 	}
-	analyticsClient := analytics.NewAnalyticsClient(analyticsConn)
+	analyticsGrpcClient := analytics.NewAnalyticsClient(analyticsConn)
+	analyticsClient := client.NewGrpcAnalyticsClient(logger, analyticsGrpcClient, topUrlConverter, paginationConverter)
 
 	limiter := rate.NewLimiter(rate.Limit(cfg.RateLimitConfig.TokensPerSecond), cfg.RateLimitConfig.BurstSize)
 	rateLimitMiddleware := middlewares.NewRateLimiterMiddleware(
@@ -66,7 +67,7 @@ func Run() {
 
 	urlClient := client.NewGrpcUrlClient(logger, grpcUrlClient)
 	urlHandler := rest.NewURLHandler(logger, urlClient, cfg.ServerDomain, httpServerPort)
-	analyticsHandler := rest.NewAnalyticsHandler(logger, analyticsClient, topUrlConverter, paginationConverter)
+	analyticsHandler := rest.NewAnalyticsHandler(logger, analyticsClient)
 
 	mux := http.NewServeMux()
 	mux.Handle("GET /api/top_urls", rateLimitMiddleware.RateLimit(
