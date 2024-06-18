@@ -12,6 +12,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+//go:generate go run github.com/vektra/mockery/v2@v2.42.1 --name AnalyticsClient
 type AnalyticsClient interface {
 	GetTopUrls(ctx context.Context, page int64, limit int64) (dto.TopURLDataResponse, error)
 }
