@@ -10,7 +10,6 @@ import (
 
 	"api_gateway/errs"
 	"api_gateway/internal/client"
-	"api_gateway/internal/converter"
 	"api_gateway/internal/transport/rest/response"
 )
 
@@ -22,10 +21,8 @@ const (
 )
 
 type AnalyticsHandler struct {
-	logger              *slog.Logger
-	analyticsClient     client.AnalyticsClient
-	topUrlConverter     converter.TopURLConverter
-	paginationConverter converter.PaginationConverter
+	logger          *slog.Logger
+	analyticsClient client.AnalyticsClient
 }
 
 func NewAnalyticsHandler(
