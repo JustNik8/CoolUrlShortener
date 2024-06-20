@@ -111,8 +111,7 @@ func TestSaveURL(t *testing.T) {
 	basePath := "/api/save_url"
 
 	testErr := errors.New("test error")
-	serverDomain := "test"
-	serverPort := "8000"
+	serverDomain := "test:8000"
 
 	testCases := []struct {
 		name             string
@@ -152,7 +151,7 @@ func TestSaveURL(t *testing.T) {
 			},
 			expectedCode:     http.StatusOK,
 			expectedLongURL:  "http://test.long",
-			expectedShortURL: fmt.Sprintf("%s://%s:%s/%s", serverProtocol, serverDomain, serverPort, "short"),
+			expectedShortURL: fmt.Sprintf("%s://%s/%s", serverProtocol, serverDomain, "short"),
 		},
 		{
 			name: "Unexpected error while saving url. 500 Internal Server Error",
