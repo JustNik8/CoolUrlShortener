@@ -24,7 +24,6 @@ func TestFollowUrl(t *testing.T) {
 		slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
 	)
 	serverDomain := "test"
-	serverPort := "8000"
 	basePath := ""
 
 	testErr := errors.New("test error")
@@ -88,7 +87,6 @@ func TestFollowUrl(t *testing.T) {
 				logger,
 				tc.buildUrlClient(),
 				serverDomain,
-				serverPort,
 			)
 
 			path := fmt.Sprintf("%s/%s", basePath, tc.shortURL)
@@ -113,8 +111,7 @@ func TestSaveURL(t *testing.T) {
 	basePath := "/api/save_url"
 
 	testErr := errors.New("test error")
-	serverDomain := "test"
-	serverPort := "8000"
+	serverDomain := "test:8000"
 
 	testCases := []struct {
 		name             string
@@ -154,7 +151,7 @@ func TestSaveURL(t *testing.T) {
 			},
 			expectedCode:     http.StatusOK,
 			expectedLongURL:  "http://test.long",
-			expectedShortURL: fmt.Sprintf("%s://%s:%s/%s", serverProtocol, serverDomain, serverPort, "short"),
+			expectedShortURL: fmt.Sprintf("%s://%s/%s", serverProtocol, serverDomain, "short"),
 		},
 		{
 			name: "Unexpected error while saving url. 500 Internal Server Error",
@@ -180,7 +177,6 @@ func TestSaveURL(t *testing.T) {
 				logger,
 				tc.buildUrlClient(),
 				serverDomain,
-				serverPort,
 			)
 
 			var buf bytes.Buffer
@@ -213,7 +209,6 @@ func FuzzSaveURL(f *testing.F) {
 
 	testShortURL := "http://test/short"
 	serverDomain := "test"
-	serverPort := "8000"
 
 	mockClient := mocks.NewUrlClient(f)
 
@@ -221,7 +216,6 @@ func FuzzSaveURL(f *testing.F) {
 		logger,
 		mockClient,
 		serverDomain,
-		serverPort,
 	)
 
 	args := []dto.LongURLData{

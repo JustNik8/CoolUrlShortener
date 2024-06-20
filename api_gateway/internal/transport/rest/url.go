@@ -23,20 +23,17 @@ type URLHandler struct {
 	logger       *slog.Logger
 	urlClient    client.UrlClient
 	serverDomain string
-	serverPort   string
 }
 
 func NewURLHandler(
 	logger *slog.Logger,
 	urlClient client.UrlClient,
 	serverDomain string,
-	serverPort string,
 ) *URLHandler {
 	return &URLHandler{
 		logger:       logger,
 		urlClient:    urlClient,
 		serverDomain: serverDomain,
-		serverPort:   serverPort,
 	}
 }
 
@@ -114,7 +111,7 @@ func (h *URLHandler) SaveURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	shortURL := fmt.Sprintf("%s://%s:%s/%s", serverProtocol, h.serverDomain, h.serverPort, shortURLRaw)
+	shortURL := fmt.Sprintf("%s://%s/%s", serverProtocol, h.serverDomain, shortURLRaw)
 	urlData := dto.URlData{
 		LongURL:  longURLData.LongURL,
 		ShortURL: shortURL,

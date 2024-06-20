@@ -86,7 +86,7 @@ services:
       ANALYTICS_SERVICE_HOST: "analytics_service"
       ANALYTICS_SERVICE_PORT: "8102"
 
-      SERVER_DOMAIN: "localhost"
+      SERVER_DOMAIN: "localhost:8000"
 
       RATE_LIMIT_BURST_SIZE: "1000"
       RATE_LIMIT_TOKEN_PER_SECOND: "1000"
