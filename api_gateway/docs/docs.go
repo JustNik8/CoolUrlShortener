@@ -94,15 +94,13 @@ const docTemplate = `{
                         "type": "integer",
                         "description": "Страница",
                         "name": "page",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "integer",
                         "description": "Максимальное количество url на странице",
                         "name": "limit",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -173,9 +171,6 @@ const docTemplate = `{
     "definitions": {
         "dto.LongURLData": {
             "type": "object",
-            "required": [
-                "long_url"
-            ],
             "properties": {
                 "long_url": {
                     "type": "string"
