@@ -3,8 +3,6 @@ definitions:
     properties:
       long_url:
         type: string
-    required:
-    - long_url
     type: object
   dto.Pagination:
     properties:
@@ -139,12 +137,10 @@ paths:
       - description: Страница
         in: query
         name: page
-        required: true
         type: integer
       - description: Максимальное количество url на странице
         in: query
         name: limit
-        required: true
         type: integer
       produces:
       - application/json
