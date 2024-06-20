@@ -38,13 +38,36 @@ func Run() {
 		panic(err)
 	}
 
+	runHttpServer(logger, cfg)
+}
+
+func setupLogger(env string) (*slog.Logger, error) {
+	var logger *slog.Logger
+
+	switch env {
+	case envLocal:
+		logger = slog.New(
+			slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+		)
+	case envProd:
+		logger = slog.New(
+			slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}),
+		)
+	default:
+		return nil, fmt.Errorf("incorrect env %s", env)
+	}
+
+	return logger, nil
+}
+
+func runHttpServer(logger *slog.Logger, cfg config.Config) {
 	topUrlConverter := converter.NewTopURLConverter()
 	paginationConverter := converter.NewPaginationConverter()
 
 	urlTarget := fmt.Sprintf("%s:%s", cfg.UrlServiceConfig.Host, cfg.UrlServiceConfig.Port)
-	urlTransportOpr := grpc.WithTransportCredentials(insecure.NewCredentials())
+	urlTransportOpt := grpc.WithTransportCredentials(insecure.NewCredentials())
 
-	urlConn, err := grpc.NewClient(urlTarget, urlTransportOpr)
+	urlConn, err := grpc.NewClient(urlTarget, urlTransportOpt)
 	if err != nil {
 		panic(err)
 	}
@@ -93,23 +116,4 @@ func Run() {
 	if err != nil {
 		logger.Info(err.Error())
 	}
-}
-
-func setupLogger(env string) (*slog.Logger, error) {
-	var logger *slog.Logger
-
-	switch env {
-	case envLocal:
-		logger = slog.New(
-			slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
-		)
-	case envProd:
-		logger = slog.New(
-			slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}),
-		)
-	default:
-		return nil, fmt.Errorf("incorrect env %s", env)
-	}
-
-	return logger, nil
 }

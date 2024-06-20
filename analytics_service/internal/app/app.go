@@ -41,68 +41,8 @@ func Run() {
 	if err != nil {
 		panic(err)
 	}
-
-	topURLConverter := converter.NewTopURLConverter()
-	paginationConverter := converter.NewPaginationConverter()
-
-	clickhouseConn, err := setupClickhouseConn(cfg.ClickhouseConfig)
-	if err != nil {
-		panic(err)
-	}
-
-	paginationRepo := clickhouserepo.NewPaginationRepoClickhouse(clickhouseConn)
-	paginationService := service.NewPaginationService(paginationRepo)
-
-	analyticsRepo, err := clickhouserepo.NewAnalyticsRepoClickhouse(logger, clickhouseConn)
-	if err != nil {
-		panic(err)
-	}
-	analyticsService := service.NewAnalyticsService(analyticsRepo)
-
-	healthCheckHandler := rest.NewHealthCheckHandler(logger)
-
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /api/healthcheck", healthCheckHandler.HealthCheck)
-
-	go func() {
-		addr := fmt.Sprintf(":%s", httpServerPort)
-
-		server := http.Server{
-			Addr:    addr,
-			Handler: mux,
-		}
-
-		logger.Info(fmt.Sprintf("Run server on %s", addr))
-		err = server.ListenAndServe()
-		if err != nil {
-			logger.Info(err.Error())
-		}
-	}()
-
-	go func() {
-		s := grpc.NewServer()
-		analyticsServer := analytics_grpc.NewAnalyticsServer(
-			logger,
-			analyticsService,
-			paginationService,
-			topURLConverter,
-			paginationConverter,
-		)
-
-		analytics.RegisterAnalyticsServer(s, analyticsServer)
-		port := fmt.Sprintf(":%s", grpcServerPort)
-		listener, err := net.Listen(grpcServerNetwork, port)
-		if err != nil {
-			panic(err)
-		}
-
-		err = s.Serve(listener)
-		if err != nil {
-			logger.Info(err.Error())
-			return
-		}
-
-	}()
+	runGrpcServer(logger, cfg.ClickhouseConfig)
+	runHttpServer(logger)
 
 	// Graceful shutdown
 	stop := make(chan os.Signal, 1)
@@ -154,4 +94,68 @@ func setupClickhouseConn(clickhouseCfg config.ClickhouseConfig) (driver.Conn, er
 		return nil, err
 	}
 	return conn, err
+}
+
+func runGrpcServer(logger *slog.Logger, clickhouseCfg config.ClickhouseConfig) {
+	topURLConverter := converter.NewTopURLConverter()
+	paginationConverter := converter.NewPaginationConverter()
+
+	clickhouseConn, err := setupClickhouseConn(clickhouseCfg)
+	if err != nil {
+		panic(err)
+	}
+
+	paginationRepo := clickhouserepo.NewPaginationRepoClickhouse(clickhouseConn)
+	paginationService := service.NewPaginationService(paginationRepo)
+
+	analyticsRepo, err := clickhouserepo.NewAnalyticsRepoClickhouse(logger, clickhouseConn)
+	if err != nil {
+		panic(err)
+	}
+	analyticsService := service.NewAnalyticsService(analyticsRepo)
+
+	go func() {
+		s := grpc.NewServer()
+		analyticsServer := analytics_grpc.NewAnalyticsServer(
+			logger,
+			analyticsService,
+			paginationService,
+			topURLConverter,
+			paginationConverter,
+		)
+
+		analytics.RegisterAnalyticsServer(s, analyticsServer)
+		port := fmt.Sprintf(":%s", grpcServerPort)
+		listener, err := net.Listen(grpcServerNetwork, port)
+		if err != nil {
+			panic(err)
+		}
+
+		err = s.Serve(listener)
+		if err != nil {
+			logger.Info(err.Error())
+		}
+	}()
+}
+
+func runHttpServer(logger *slog.Logger) {
+	healthCheckHandler := rest.NewHealthCheckHandler(logger)
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /api/healthcheck", healthCheckHandler.HealthCheck)
+
+	go func() {
+		addr := fmt.Sprintf(":%s", httpServerPort)
+
+		server := http.Server{
+			Addr:    addr,
+			Handler: mux,
+		}
+
+		logger.Info(fmt.Sprintf("Run server on %s", addr))
+		err := server.ListenAndServe()
+		if err != nil {
+			logger.Info(err.Error())
+		}
+	}()
 }
