@@ -24,7 +24,6 @@ func TestFollowUrl(t *testing.T) {
 		slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
 	)
 	serverDomain := "test"
-	serverPort := "8000"
 	basePath := ""
 
 	testErr := errors.New("test error")
@@ -88,7 +87,6 @@ func TestFollowUrl(t *testing.T) {
 				logger,
 				tc.buildUrlClient(),
 				serverDomain,
-				serverPort,
 			)
 
 			path := fmt.Sprintf("%s/%s", basePath, tc.shortURL)
@@ -180,7 +178,6 @@ func TestSaveURL(t *testing.T) {
 				logger,
 				tc.buildUrlClient(),
 				serverDomain,
-				serverPort,
 			)
 
 			var buf bytes.Buffer
@@ -213,7 +210,6 @@ func FuzzSaveURL(f *testing.F) {
 
 	testShortURL := "http://test/short"
 	serverDomain := "test"
-	serverPort := "8000"
 
 	mockClient := mocks.NewUrlClient(f)
 
@@ -221,7 +217,6 @@ func FuzzSaveURL(f *testing.F) {
 		logger,
 		mockClient,
 		serverDomain,
-		serverPort,
 	)
 
 	args := []dto.LongURLData{

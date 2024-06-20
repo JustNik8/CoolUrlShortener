@@ -66,7 +66,7 @@ func Run() {
 	)
 
 	urlClient := client.NewGrpcUrlClient(logger, grpcUrlClient)
-	urlHandler := rest.NewURLHandler(logger, urlClient, cfg.ServerDomain, httpServerPort)
+	urlHandler := rest.NewURLHandler(logger, urlClient, cfg.ServerDomain)
 	analyticsHandler := rest.NewAnalyticsHandler(logger, analyticsClient)
 
 	mux := http.NewServeMux()
