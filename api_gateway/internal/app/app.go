@@ -80,6 +80,7 @@ func runHttpServer(logger *slog.Logger, cfg config.Config) {
 	if err != nil {
 		panic(err)
 	}
+
 	analyticsGrpcClient := analytics.NewAnalyticsClient(analyticsConn)
 	analyticsClient := client.NewGrpcAnalyticsClient(logger, analyticsGrpcClient, topUrlConverter, paginationConverter)
 
